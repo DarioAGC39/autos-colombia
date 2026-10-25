@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Entrada - Autos Colombia{% endblock %}
+{% block header_title %}Registrar entrada{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">Registrar entrada</h2>
+    <p class="page-description">Registra el ingreso de un vehículo al parqueadero.</p>
+</div>
+
+<div class="grid-layout-two-columns">
+
+    <!-- COLUMNA IZQUIERDA: FORMULARIO PRINCIPAL -->
+    <div class="form-container-card">
+        <div class="card-header-clean">
+            <h3 class="card-title">Datos del vehículo</h3>
+            <p class="card-subtitle">Completa la información para registrar el ingreso.</p>
+            <span class="required-note">Todos los campos son obligatorios.</span>
+        </div>
+
+        <form action="{{ url_for('registrar_entrada') }}" method="POST" id="form-registrar-entrada" novalidate>
+            
+            <!-- Fila 1: Placa y Tipo de vehículo -->
+            <div class="form-row">
+                <div class="form-group {% if errores.placa %}has-error{% endif %}">
+                    <label for="placa" class="form-label">Placa del vehículo <span class="required-star">*</span></label>
+                    <input 
+                        type="text" 
+                        id="placa" 
+                        name="placa" 
+                        class="form-control text-uppercase" 
+                        placeholder="Ej. KLM482" 
+                        maxlength="7"
+                        value="{{ datos.placa if datos else '' }}"
+                        {% if exito or ya_activo %}disabled{% endif %}
+                        required
+                        autocomplete="off"
+                    >
+                    {% if errores.placa %}
+                        <div class="field-error-message">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{{ errores.placa }}</span>
+                        </div>
+                    {% else %}
+                        <span class="field-helper-text">Sin espacios ni guiones. Ejemplo: KLM482.</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if errores.tipo %}has-error{% endif %}">
+                    <label for="tipo" class="form-label">Tipo de vehículo <span class="required-star">*</span></label>
+                    <select 
+                        id="tipo" 
+                        name="tipo" 
+                        class="form-select"
+                        {% if exito or ya_activo %}disabled{% endif %}
+                        required
+                    >
+                        <option value="" disabled {% if not datos or not datos.tipo %}selected{% endif %}>Selecciona el tipo</option>
+                        <option value="Automóvil" {% if datos and datos.tipo == 'Automóvil' %}selected{% endif %}>Automóvil</option>
+                        <option value="Motocicleta" {% if datos and datos.tipo == 'Motocicleta' %}selected{% endif %}>Motocicleta</option>
+                        <option value="Camioneta" {% if datos and datos.tipo == 'Camioneta' %}selected{% endif %}>Camioneta</option>
+                        <option value="Camión" {% if datos and datos.tipo == 'Camión' %}selected{% endif %}>Camión</option>
+                        <option value="Otro" {% if datos and datos.tipo == 'Otro' %}selected{% endif %}>Otro</option>
+                    </select>
+                    {% if errores.tipo %}
+                        <div class="field-error-message">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{{ errores.tipo }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Fila 2: Color y Marca -->
+            <div class="form-row">
+                <div class="form-group {% if errores.color %}has-error{% endif %}">
+                    <label for="color" class="form-label">Color <span class="required-star">*</span></label>
+                    <input 
+                        type="text" 
+                        id="color" 
+                        name="color" 
+                        class="form-control" 
+                        placeholder="Ej. Gris plata" 
+                        value="{{ datos.color if datos else '' }}"
+                        {% if exito or ya_activo %}disabled{% endif %}
+                        required
+                    >
+                    {% if errores.color %}
+                        <div class="field-error-message">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{{ errores.color }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group {% if errores.marca %}has-error{% endif %}">
+                    <label for="marca" class="form-label">Marca <span class="required-star">*</span></label>
+                    <input 
+                        type="text" 
+                        id="marca" 
+                        name="marca" 
+                        class="form-control" 
+                        placeholder="Ej. Renault" 
+                        value="{{ datos.marca if datos else '' }}"
+                        {% if exito or ya_activo %}disabled{% endif %}
+                        required
+                    >
+                    {% if errores.marca %}
+                        <div class="field-error-message">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{{ errores.marca }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Fila 3: Modelo -->
+            <div class="form-row">
+                <div class="form-group full-width {% if errores.modelo %}has-error{% endif %}">
+                    <label for="modelo" class="form-label">Modelo <span class="required-star">*</span></label>
+                    <input 
+                        type="text" 
+                        id="modelo" 
+                        name="modelo" 
+                        class="form-control" 
+                        placeholder="Ej. Logan 2022" 
+                        value="{{ datos.modelo if datos else '' }}"
+                        {% if exito or ya_activo %}disabled{% endif %}
+                        required
+                    >
+                    {% if errores.modelo %}
+                        <div class="field-error-message">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>{{ errores.modelo }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="form-actions-row">
+                {% if exito %}
+                    <a href="{{ url_for('registrar_entrada') }}" class="btn btn-secondary">
+                        Nueva entrada
+                    </a>
+                    <button type="button" class="btn btn-primary" disabled>
+                        <span>Registrar entrada</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                {% else %}
+                    <button type="reset" class="btn btn-secondary" id="btn-limpiar">
+                        Limpiar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-registrar">
+                        <span>Registrar entrada</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                {% endif %}
+            </div>
+
+        </form>
+    </div>
+
+    <!-- COLUMNA DERECHA: TARJETAS DE INFORMACIÓN Y ESTADO -->
+    <div class="info-sidebar-column">
+
+        <!-- Tarjeta Informativa 1 -->
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon icon-blue">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </div>
+                <h4 class="info-card-title">Antes de registrar</h4>
+            </div>
+            <p class="info-card-text">
+                Verifica la placa y las características del vehículo antes de confirmar su ingreso.
+            </p>
+            <p class="info-card-highlight">
+                Solo puede existir un movimiento activo por vehículo.
+            </p>
+        </div>
+
+        <!-- Tarjeta Informativa 2 -->
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon icon-sky">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <h4 class="info-card-title">Registro automático</h4>
+            </div>
+            <p class="info-card-text">
+                La fecha y hora de entrada se asignan automáticamente al confirmar el registro con la hora de Colombia.
+            </p>
+        </div>
+
+        <!-- Tarjeta: Movimiento actual (Si se acaba de registrar o si ya estaba activo) -->
+        {% if movimiento_activo %}
+        <div class="info-card movement-summary-card">
+            <div class="info-card-header justify-between">
+                <h4 class="info-card-title">Movimiento actual</h4>
+                <span class="badge-status badge-active">
+                    <span class="dot-active"></span> Activo
+                </span>
+            </div>
+
+            <div class="movement-meta-item">
+                <span class="meta-label">Placa</span>
+                <span class="meta-value-bold">{{ movimiento_activo.placa or datos.placa }}</span>
+            </div>
+
+            <div class="movement-meta-item">
+                <span class="meta-label">Fecha y hora de entrada</span>
+                <span class="meta-value">{{ movimiento_activo.fecha_hora_entrada }}</span>
+            </div>
+
+            {% if ya_activo %}
+            <div class="mt-4">
+                <a href="{{ url_for('registrar_salida', placa=datos.placa) }}" class="btn btn-primary full-width">
+                    <span>Ir a registrar salida</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endblock %}

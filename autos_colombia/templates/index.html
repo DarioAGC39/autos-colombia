@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Autos Colombia{% endblock %}
+{% block header_title %}Panel de Control{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">Bienvenido a Autos Colombia</h2>
+    <p class="page-description">Sistema integral para el control de entrada y salida en parqueadero mensual.</p>
+</div>
+
+<!-- TARJETAS DE ESTADÍSTICAS RÁPIDAS -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                <circle cx="7" cy="17" r="2"/>
+                <path d="M9 17h6"/>
+                <circle cx="17" cy="17" r="2"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number">{{ stats.activos }}</span>
+            <span class="stat-label">Vehículos en parqueadero</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number">{{ stats.vehiculos }}</span>
+            <span class="stat-label">Vehículos registrados</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-indigo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number">{{ stats.hoy }}</span>
+            <span class="stat-label">Salidas finalizadas hoy</span>
+        </div>
+    </div>
+</div>
+
+<!-- ACCESOS RÁPIDOS OPERATIVOS -->
+<div class="quick-actions-row mt-6">
+    <a href="{{ url_for('registrar_entrada') }}" class="action-card">
+        <div class="action-card-header">
+            <span class="action-card-icon icon-entry">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+            </span>
+            <span class="action-card-arrow">➜</span>
+        </div>
+        <h3 class="action-card-title">Registrar entrada</h3>
+        <p class="action-card-desc">Ingreso de un vehículo al parqueadero con validación de placa.</p>
+    </a>
+
+    <a href="{{ url_for('registrar_salida') }}" class="action-card">
+        <div class="action-card-header">
+            <span class="action-card-icon icon-exit">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+            </span>
+            <span class="action-card-arrow">➜</span>
+        </div>
+        <h3 class="action-card-title">Registrar salida</h3>
+        <p class="action-card-desc">Búsqueda y confirmación de salida de vehículos activos.</p>
+    </a>
+
+    <a href="{{ url_for('consultar_vehiculo') }}" class="action-card">
+        <div class="action-card-header">
+            <span class="action-card-icon icon-search">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </span>
+            <span class="action-card-arrow">➜</span>
+        </div>
+        <h3 class="action-card-title">Consultar vehículo</h3>
+        <p class="action-card-desc">Verifica si un carro está «En parqueadero» o «Fuera».</p>
+    </a>
+
+    <a href="{{ url_for('historial') }}" class="action-card">
+        <div class="action-card-header">
+            <span class="action-card-icon icon-history">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </span>
+            <span class="action-card-arrow">➜</span>
+        </div>
+        <h3 class="action-card-title">Historial de movimientos</h3>
+        <p class="action-card-desc">Consulta el registro cronológico completo de cualquier placa.</p>
+    </a>
+</div>
+
+<!-- ACTIVIDAD RECIENTE -->
+{% if ultimos_movimientos %}
+<div class="history-table-card mt-6">
+    <div class="history-card-header">
+        <div class="history-title-wrap">
+            <h3 class="history-card-title">Últimos movimientos registrados</h3>
+            <span class="history-card-subtitle">Actividad más reciente en el parqueadero</span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Placa</th>
+                    <th>Vehículo</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in ultimos_movimientos %}
+                <tr>
+                    <td>
+                        <strong class="font-bold">{{ m.placa }}</strong>
+                    </td>
+                    <td>
+                        {{ m.marca }} {{ m.modelo }} ({{ m.tipo }})
+                    </td>
+                    <td class="cell-date">{{ m.fecha_hora_entrada }}</td>
+                    <td class="cell-date">
+                        {% if m.fecha_hora_salida %}
+                            {{ m.fecha_hora_salida }}
+                        {% else %}
+                            <span class="text-muted font-bold">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if m.estado == 'ACTIVO' %}
+                            <span class="pill-badge pill-active">
+                                <span class="dot-green"></span> Activo
+                            </span>
+                        {% else %}
+                            <span class="pill-badge pill-finalized">
+                                <span class="dot-gray"></span> Finalizado
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

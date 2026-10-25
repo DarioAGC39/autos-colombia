@@ -1,0 +1,6 @@
+{
+  "name": "Autos Colombia - Control de Parqueadero",
+  "description": "Sistema de gestión y control de entrada y salida de vehículos para parqueadero mensual Autos Colombia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Consultar Vehículo - Autos Colombia{% endblock %}
+{% block header_title %}Consultar vehículo{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">Consultar vehículo</h2>
+    <p class="page-description">Consulta los datos del vehículo y su estado actual en el parqueadero.</p>
+</div>
+
+<!-- BARRA DE BÚSQUEDA POR PLACA -->
+<div class="search-card">
+    <form action="{{ url_for('consultar_vehiculo') }}" method="GET" class="search-form">
+        <div class="search-input-group">
+            <label for="placa-search" class="search-label">Buscar por placa</label>
+            <div class="search-row">
+                <input 
+                    type="text" 
+                    id="placa-search" 
+                    name="placa" 
+                    class="form-control search-control text-uppercase" 
+                    placeholder="KLM482" 
+                    maxlength="7"
+                    value="{{ placa_busqueda or '' }}"
+                    required
+                    autocomplete="off"
+                >
+                <button type="submit" class="btn btn-primary btn-search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Buscar</span>
+                </button>
+            </div>
+            <span class="field-helper-text">Ingresa la placa completa, sin espacios ni guiones.</span>
+        </div>
+    </form>
+</div>
+
+<!-- RESULTADOS DEL VEHÍCULO -->
+{% if vehiculo %}
+<div class="vehicle-result-card">
+
+    <!-- Encabezado de la ficha del vehículo -->
+    <div class="vehicle-card-header">
+        <div class="vehicle-badge-profile">
+            <div class="vehicle-icon-box">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+                    <circle cx="7" cy="17" r="2"/>
+                    <path d="M9 17h6"/>
+                    <circle cx="17" cy="17" r="2"/>
+                </svg>
+            </div>
+            <div class="vehicle-title-wrap">
+                <h3 class="vehicle-plate-title">{{ vehiculo.placa }}</h3>
+                <span class="vehicle-model-subtitle">{{ vehiculo.marca }} {{ vehiculo.modelo }}</span>
+            </div>
+        </div>
+
+        <div class="vehicle-status-badge-wrap">
+            {% if movimiento_activo %}
+                <span class="pill-badge pill-in-parking">
+                    <span class="dot-green"></span> En parqueadero
+                </span>
+            {% else %}
+                <span class="pill-badge pill-out-parking">
+                    <span class="dot-gray"></span> Fuera del parqueadero
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Grilla de características técnicas -->
+    <div class="vehicle-details-grid">
+        <div class="detail-column">
+            <span class="detail-label">Tipo de vehículo</span>
+            <span class="detail-value">{{ vehiculo.tipo }}</span>
+        </div>
+        <div class="detail-column">
+            <span class="detail-label">Color</span>
+            <span class="detail-value">{{ vehiculo.color }}</span>
+        </div>
+        <div class="detail-column">
+            <span class="detail-label">Marca</span>
+            <span class="detail-value">{{ vehiculo.marca }}</span>
+        </div>
+        <div class="detail-column">
+            <span class="detail-label">Modelo</span>
+            <span class="detail-value">{{ vehiculo.modelo }}</span>
+        </div>
+    </div>
+
+    <!-- ESTADO DEL MOVIMIENTO: ACTIVO O INACTIVO -->
+    {% if movimiento_activo %}
+    <div class="movement-active-box mt-6">
+        <div class="movement-box-header">
+            <h4 class="movement-box-title">Movimiento activo</h4>
+            <span class="pill-badge pill-active">
+                <span class="dot-green"></span> Activo
+            </span>
+        </div>
+
+        <div class="movement-table-summary">
+            <div class="summary-col">
+                <span class="summary-label">Placa del vehículo</span>
+                <span class="summary-value">{{ movimiento_activo.placa }}</span>
+            </div>
+            <div class="summary-col">
+                <span class="summary-label">Fecha y hora de entrada</span>
+                <span class="summary-value">{{ movimiento_activo.fecha_hora_entrada }}</span>
+            </div>
+            <div class="summary-col">
+                <span class="summary-label">Fecha y hora de salida</span>
+                <span class="summary-value text-muted">—</span>
+            </div>
+        </div>
+
+        <p class="movement-info-caption">
+            El vehículo permanece en el parqueadero. Aún no se ha registrado su salida.
+        </p>
+
+        <div class="mt-6 flex-end">
+            <a href="{{ url_for('registrar_salida', placa=vehiculo.placa) }}" class="btn btn-primary">
+                <span>Registrar salida</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state-card mt-6">
+        <div class="empty-state-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h4 class="empty-state-title">No existe un movimiento activo</h4>
+        <p class="empty-state-text">
+            El vehículo <strong>{{ vehiculo.placa }}</strong> se encuentra fuera del parqueadero.
+            Puedes consultar sus entradas y salidas anteriores en Historial de movimientos.
+        </p>
+        <div class="mt-4 flex-actions-center">
+            <a href="{{ url_for('historial', placa=vehiculo.placa) }}" class="btn btn-secondary mr-3">
+                Ver historial de movimientos
+            </a>
+            <a href="{{ url_for('registrar_entrada') }}" class="btn btn-primary">
+                Registrar nueva entrada
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endif %}
+
+{% endblock %}
