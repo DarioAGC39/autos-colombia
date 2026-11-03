@@ -51,6 +51,19 @@
                         <span class="nav-label">Inicio</span>
                     </a>
 
+                    <a href="{{ url_for('disponibilidad') }}" class="nav-item {% if request.endpoint == 'disponibilidad' %}active{% endif %}">
+                        <span class="nav-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect width="7" height="7" x="3" y="3" rx="1"/>
+                                <rect width="7" height="7" x="14" y="3" rx="1"/>
+                                <rect width="7" height="7" x="14" y="14" rx="1"/>
+                                <rect width="7" height="7" x="3" y="14" rx="1"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Panel de disponibilidad</span>
+                        <span class="nav-badge" style="font-size: 10px; background: rgba(30, 96, 242, 0.25); color: #93c5fd; padding: 2px 6px; border-radius: 9999px; margin-left: auto;">80</span>
+                    </a>
+
                     <a href="{{ url_for('registrar_entrada') }}" class="nav-item {% if request.endpoint == 'registrar_entrada' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

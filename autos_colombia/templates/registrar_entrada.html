@@ -56,12 +56,9 @@
                         {% if exito or ya_activo %}disabled{% endif %}
                         required
                     >
-                        <option value="" disabled {% if not datos or not datos.tipo %}selected{% endif %}>Selecciona el tipo</option>
-                        <option value="Automóvil" {% if datos and datos.tipo == 'Automóvil' %}selected{% endif %}>Automóvil</option>
-                        <option value="Motocicleta" {% if datos and datos.tipo == 'Motocicleta' %}selected{% endif %}>Motocicleta</option>
-                        <option value="Camioneta" {% if datos and datos.tipo == 'Camioneta' %}selected{% endif %}>Camioneta</option>
-                        <option value="Camión" {% if datos and datos.tipo == 'Camión' %}selected{% endif %}>Camión</option>
-                        <option value="Otro" {% if datos and datos.tipo == 'Otro' %}selected{% endif %}>Otro</option>
+                        <option value="" disabled {% if not datos or not datos.tipo %}selected{% endif %}>Selecciona el tipo (Carro o Moto)</option>
+                        <option value="Carro" {% if datos and datos.tipo in ['Carro', 'Automóvil'] %}selected{% endif %}>Carro</option>
+                        <option value="Moto" {% if datos and datos.tipo in ['Moto', 'Motocicleta'] %}selected{% endif %}>Moto</option>
                     </select>
                     {% if errores.tipo %}
                         <div class="field-error-message">
@@ -138,7 +135,28 @@
                 </div>
             </div>
 
-            <!-- Botones de Acción -->
+            <!-- Fila 4: Celda asignada (Etapa 2 - 80 Celdas) -->
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label for="celda" class="form-label" style="margin: 0;">Celda asignada <span style="color: #64748b; font-weight: normal;">(Opcional, se asigna automáticamente)</span></label>
+                        <a href="{{ url_for('disponibilidad') }}" style="font-size: 11px; color: #1e60f2; font-weight: 600; text-decoration: none;">Ver panel de celdas →</a>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="celda" 
+                        name="celda" 
+                        class="form-control text-uppercase" 
+                        placeholder="Ej. C-01 (Carros) o M-01 (Motos)" 
+                        value="{{ request.args.get('celda', datos.celda if datos else '') }}"
+                        {% if exito or ya_activo %}disabled{% endif %}
+                        maxlength="10"
+                    >
+                    <span style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;">
+                        Si se deja en blanco, el sistema asignará la primera celda disponible según el tipo de vehículo.
+                    </span>
+                </div>
+            </div>
             <div class="form-actions-row">
                 {% if exito %}
                     <a href="{{ url_for('registrar_entrada') }}" class="btn btn-secondary">

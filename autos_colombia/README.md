@@ -1,209 +1,159 @@
 # 🚗 Autos Colombia - Sistema de Control de Parqueadero Mensual
 **Proyecto Universitario de Desarrollo de Software Full-Stack**
 
-Bienvenido a la documentación oficial y pedagógica del proyecto **Autos Colombia**. Esta guía está diseñada paso a paso para que cualquier estudiante principiante pueda comprender, ejecutar en su computador local usando **Visual Studio Code**, probar y presentar con éxito el sistema en su universidad.
+Bienvenido a la documentación oficial y pedagógica del proyecto **Autos Colombia**. Esta guía está diseñada para que cualquier estudiante principiante pueda comprender, ejecutar en su computador local usando **Visual Studio Code**, probar y defender con éxito el sistema ante su profesor y jurado evaluador.
 
 ---
 
-## 📌 1. Tecnologías y Arquitectura del Sistema
+## 📌 1. Cumplimiento de los Requerimientos del Profesor
 
-El proyecto cumple estrictamente con el enfoque pedagógico solicitado, sin sobrecargas de frameworks innecesarios:
+El sistema ha sido refinado y evaluado rigurosamente respondiendo a las observaciones del docente:
 
-- **Frontend:** HTML5 semántico, CSS3 puro (siguiendo los mockups de Figma al milímetro) y JavaScript puro (Vanilla JS).
-- **Backend:** Python 3 con el micro-framework **Flask**.
-- **Base de Datos:** **MySQL** con motor transaccional `InnoDB`.
-- **Conector MySQL:** `mysql-connector-python` oficial de Oracle.
-- **Entorno de Desarrollo:** Visual Studio Code.
-
-### ¿Cómo se comunican el Frontend, Flask y MySQL?
-1. **El usuario interactúa en el Frontend:** Por ejemplo, digita la placa `KLM482` y presiona el botón "Registrar entrada".
-2. **El navegador envía una petición HTTP:** Se envía una petición `POST` hacia la ruta `/registrar-entrada` en Flask con los datos del formulario.
-3. **Flask recibe y valida:** En `app.py`, Python valida que todos los campos existan y que la placa cumpla con el formato colombiano (3 letras y 3 números).
-4. **Flask consulta MySQL mediante consultas parametrizadas:**
-   - Abre una transacción `conn.start_transaction()`.
-   - Verifica si el vehículo ya tiene un movimiento activo usando `SELECT ... WHERE placa = %s AND estado = 'ACTIVO' FOR UPDATE`.
-   - Si no está activo, ejecuta `INSERT INTO movimiento (fecha_hora_entrada, estado, placa) VALUES (NOW(), 'ACTIVO', %s)`.
-   - Confirma los cambios con `conn.commit()`.
-5. **Flask renderiza la respuesta:** Utiliza el motor de plantillas **Jinja2** para inyectar los datos en el archivo HTML correspondiente (`registrar_entrada.html`), mostrando un mensaje de confirmación verde y el nuevo estado.
+| Observación del Profesor | Estado | Implementación en el Código |
+|---|---|---|
+| **1. Contemplar celda asignada:** Ampliar la solución para contemplar la celda, pues los modelos se limitaban a vehículos y movimientos. | ✅ **CUMPLIDO** | Se incorporó la columna `celda VARCHAR(10)` en `movimiento`, con índice `idx_movimiento_celda`. Se creó la capa `dao/celda_dao.py` que administra el catálogo de las **80 celdas** (70 para carros `C-01` a `C-70` y 10 para motos `M-01` a `M-10`), asignación automática inteligente y panel de disponibilidad en tiempo real. |
+| **2. Corrección prioritaria en salida:** Al buscar placa activa, no finalizar automáticamente; buscar solo debe consultar y la salida debe ocurrir al confirmar. | ✅ **CUMPLIDO** | Se desacopló el flujo en 2 pasos independientes en `routes/salidas.py` y `services/parqueadero_service.py`: El paso de búsqueda (`GET`/`POST`) **solo consulta y muestra** los datos del vehículo y tiempo transcurrido sin alterar la base de datos. Solo cuando el empleado pulsa el botón **"Registrar salida"** (`POST` con `accion='confirmar_salida'`) se finaliza el movimiento, se guarda `NOW()` y se libera la celda. |
+| **3. Separación de responsabilidades:** Llevar al código la modularización de los diagramas, separando rutas, reglas y consultas reunidas en `app.py`. | ✅ **CUMPLIDO** | Se refactorizó el proyecto en una **Arquitectura en 3 Capas (Clean MVC)**: `database.py` (conexión), `dao/` (consultas SQL aisladas), `services/` (reglas de negocio, validaciones y tarifas) y `routes/` (Flask Blueprints por módulo). `app.py` quedó como una fábrica limpia de la aplicación (`create_app`). |
+| **4. Relación React vs. Flask:** Aclarar cómo se relaciona la versión React con la aplicación Flask. | ✅ **CUMPLIDO** | Documentado en detalle en la Sección 6: React actúa como el **Prototipo Interactivo de Alta Fidelidad (Digital Twin)** para validación inmediata de UX y reglas en el navegador (`localStorage`), mientras que Flask + MySQL es el **Backend Real de Entrega Académica** para persistencia relacional ACID y ejecución en VS Code. |
 
 ---
 
-## 📁 2. Estructura del Proyecto Explicada
+## 💰 2. Modelo de Negocio: Parqueadero Mensual
+
+El sistema **Autos Colombia** opera bajo el modelo de suscripción mensual:
+- **Tarifa mensual Carros:** **$250.000 COP / mes** (Capacidad: 70 celdas, `C-01` a `C-70`).
+- **Tarifa mensual Motos:** **$100.000 COP / mes** (Capacidad: 10 celdas, `M-01` a `M-10`).
+- **Capacidad Total:** **80 celdas** organizadas por zona.
+- **Tipos Admitidos:** Exclusivamente **Carro** o **Moto** (sin otros tipos no admitidos).
+- **Operación en Salida:** No hay caja de cobro ni tarifas por minuto/fracción al salir. El registro de salida libera la celda asignada y registra la fecha/hora de salida del abonado mensual.
+
+---
+
+## 🏛️ 3. Arquitectura de Software y Separación de Responsabilidades
+
+El proyecto implementa el patrón de capas desacopladas recomendado en ingeniería de software:
 
 ```text
 autos_colombia/
 │
-├── app.py                 # Backend principal: rutas Flask, lógica de negocio y transacciones
-├── config.py              # Carga segura de variables de entorno (.env)
-├── database.sql           # Script SQL para crear la base de datos, tablas, índices y datos de prueba
-├── requirements.txt       # Lista de librerías Python requeridas
-├── .env.example           # Plantilla de variables de entorno (credenciales de MySQL)
-├── README.md              # Guía completa de instalación y sustentación
+├── app.py                      # Punto de entrada / Fábrica (Application Factory)
+├── config.py                   # Carga de variables de entorno seguras (.env)
+├── database.py                 # Gestor central de conexión MySQL con mysql-connector
+├── database.sql                # Script DDL completo: tablas, índices, celdas y datos de prueba
+├── migration_celdas.sql        # Script de migración ALTER TABLE para agregar celda
+├── requirements.txt            # Dependencias oficiales: Flask, mysql-connector-python, python-dotenv
+├── .env.example                # Plantilla de credenciales locales
 │
-├── templates/             # Vistas HTML con plantillas Jinja2
-│   ├── base.html              # Plantilla maestra (barra lateral azul oscuro, reloj y encabezado)
-│   ├── index.html             # Panel de inicio con estadísticas y accesos rápidos
-│   ├── registrar_entrada.html # Formulario de ingreso de vehículos con validaciones
-│   ├── registrar_salida.html  # Búsqueda y confirmación de salidas
-│   ├── consultar_vehiculo.html# Consulta de estado («En parqueadero» o «Fuera»)
-│   └── historial.html         # Tabla cronológica de movimientos y estado vacío
+├── dao/                        # CAPA DE ACCESO A DATOS (Data Access Object)
+│   ├── __init__.py
+│   ├── vehiculo_dao.py         # Consultas SQL para la tabla 'vehiculo'
+│   ├── movimiento_dao.py       # Consultas SQL para la tabla 'movimiento'
+│   └── celda_dao.py            # Mapeo y consultas de las 80 celdas de parqueo
 │
-└── static/                # Archivos estáticos
+├── services/                   # CAPA DE LÓGICA DE NEGOCIO
+│   ├── __init__.py
+│   └── parqueadero_service.py  # Reglas de negocio: validación de placa, asignación
+│                               # de celdas libres, confirmación en 2 fases, tarifas
+│
+├── routes/                     # CAPA DE CONTROLADORES (Flask Blueprints)
+│   ├── __init__.py
+│   ├── dashboard.py            # Rutas de inicio y KPIs (/ -> index)
+│   ├── entradas.py             # Formulario y registro de ingreso (/registrar-entrada)
+│   ├── salidas.py              # Búsqueda y confirmación en 2 pasos (/registrar-salida)
+│   ├── consultas.py            # Consulta por placa e historial (/consultar-vehiculo, /historial)
+│   ├── disponibilidad.py       # Cuadrícula interactiva de 80 celdas (/disponibilidad)
+│   └── api.py                  # Endpoints REST JSON para autocompletado en JavaScript
+│
+├── templates/                  # CAPA DE VISTAS (Plantillas Jinja2 y HTML5 semántico)
+│   ├── base.html               # Layout general con sidebar azul, reloj y breadcrumbs
+│   ├── index.html              # Dashboard operativo
+│   ├── disponibilidad.html     # Panel de las 80 celdas con filtros y estadísticas
+│   ├── registrar_entrada.html  # Formulario con autocompletado y selección de celda
+│   ├── registrar_salida.html   # Flujo de salida en 2 pasos (búsqueda y confirmación)
+│   ├── consultar_vehiculo.html # Ficha del vehículo y estado actual
+│   └── historial.html          # Tabla cronológica de movimientos
+│
+└── static/                     # ASSETS DEL CLIENTE
     ├── css/
-    │   └── styles.css         # Hoja de estilos moderna y limpia (Figma original)
+    │   └── styles.css          # CSS3 puro basado en los mockups de Figma
     └── js/
-        └── app.js             # Reloj Colombia, validaciones en cliente y autocompletado
+        └── app.js              # Vanilla JS: autocompletado, reloj Colombia y validaciones
 ```
 
 ---
 
-## 🛠️ 3. Requisitos Previos e Instalación Local
+## 🛠️ 4. Guía de Instalación y Ejecución en Visual Studio Code
 
-### Paso 1: Instalar Python y MySQL
-1. **Python 3.10 o superior:** Descárgalo desde [python.org](https://www.python.org). Al instalar en Windows, asegúrate de marcar la casilla **"Add Python to PATH"**.
-2. **MySQL:** Puedes usar **XAMPP** (iniciando el módulo MySQL) o **MySQL Workbench / MySQL Community Server**.
-3. **Visual Studio Code:** Descárgalo desde [code.visualstudio.com](https://code.visualstudio.com).
+### Paso 1: Configurar la Base de Datos en MySQL
+1. Abre tu cliente MySQL preferido (**phpMyAdmin** en XAMPP, **MySQL Workbench** o la terminal).
+2. Ejecuta el archivo `database.sql`. Esto creará la base de datos `autos_colombia`, las tablas `vehiculo` y `movimiento` con la columna `celda`, índices y registros de prueba.
 
----
-
-### Paso 2: Crear la Base de Datos en MySQL
-1. Abre tu gestor de base de datos preferido (**phpMyAdmin** en XAMPP, **MySQL Workbench** o la terminal de MySQL).
-2. Abre y ejecuta el archivo `database.sql` incluido en el proyecto.
-3. Este script:
-   - Creará la base de datos `autos_colombia`.
-   - Creará la tabla `vehiculo` con su clave primaria `placa`.
-   - Creará la tabla `movimiento` con clave foránea hacia `vehiculo(placa)` y restricciones de integridad.
-   - Creará el índice `idx_movimiento_placa_estado`.
-   - Insertará datos de prueba, incluyendo el vehículo `KLM482` con su historial mostrado en los mockups.
-
----
-
-### Paso 3: Abrir el Proyecto en Visual Studio Code
+### Paso 2: Abrir el Proyecto en Visual Studio Code
 1. Abre **Visual Studio Code**.
-2. Ve al menú superior: **Archivo > Abrir carpeta...** y selecciona la carpeta `autos_colombia`.
-3. Abre una terminal integrada en VS Code presionando `` Ctrl + ` `` (o en el menú: **Terminal > Nueva terminal**).
+2. Selecciona **Archivo > Abrir carpeta...** y elige la carpeta `autos_colombia`.
+3. Abre la terminal integrada (`Ctrl + \``).
 
----
-
-### Paso 4: Crear y Activar el Entorno Virtual de Python
-El entorno virtual aísla las librerías del proyecto para no afectar la instalación global de tu sistema.
-
-**En Windows (PowerShell / Símbolo del Sistema):**
+### Paso 3: Entorno Virtual e Instalación de Dependencias
 ```bash
+# En Windows:
 python -m venv venv
 .\venv\Scripts\activate
-```
-*(Si en PowerShell te aparece un error sobre directivas de ejecución de scripts, ejecuta antes: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted`)*
 
-**En Mac o Linux:**
-```bash
+# En Linux / Mac:
 python3 -m venv venv
 source venv/bin/activate
-```
 
-Al activarse, verás `(venv)` al inicio de tu línea de comandos.
-
----
-
-### Paso 5: Instalar las Dependencias
-Con el entorno virtual activo, ejecuta:
-```bash
+# Instalar librerías:
 pip install -r requirements.txt
 ```
 
-Esto instalará:
-- `Flask`
-- `mysql-connector-python`
-- `python-dotenv`
+### Paso 4: Variables de Entorno (`.env`)
+Copia `.env.example` como `.env` y coloca las credenciales de tu MySQL local:
+```env
+SECRET_KEY=mi_clave_secreta_universitaria_2026
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=
+MYSQL_DATABASE=autos_colombia
+```
 
----
-
-### Paso 6: Configurar las Variables de Entorno (`.env`)
-1. En la carpeta raíz del proyecto, copia el archivo `.env.example` y renómbralo exactamente como `.env`:
-   ```bash
-   cp .env.example .env
-   ```
-   *(En Windows puedes simplemente hacer clic derecho > Copiar y Pegar en VS Code)*
-2. Abre el archivo `.env` y ajusta las credenciales de tu MySQL local:
-   ```env
-   SECRET_KEY=mi_clave_secreta_universitaria_2026
-   MYSQL_HOST=localhost
-   MYSQL_PORT=3306
-   MYSQL_USER=root
-   MYSQL_PASSWORD=tu_contraseña_de_mysql
-   MYSQL_DATABASE=autos_colombia
-   ```
-   *Nota: Si estás usando XAMPP por defecto, `MYSQL_USER=root` y `MYSQL_PASSWORD=` queda en blanco.*
-
----
-
-### Paso 7: Ejecutar la Aplicación
-En la terminal integrada de VS Code ejecuta:
+### Paso 5: Iniciar el Servidor
 ```bash
 python app.py
 ```
-
-Verás una salida similar a esta:
-```text
-============================================================
-  AUTOS COLOMBIA - SISTEMA DE CONTROL DE PARQUEADERO
-  Servidor iniciado localmente.
-  Abre en tu navegador: http://127.0.0.1:5000
-============================================================
-```
-
-Abre tu navegador web e ingresa a: **`http://127.0.0.1:5000`**
+Abre en tu navegador: **`http://127.0.0.1:5000`**
 
 ---
 
-## 🧪 4. Guía de Pruebas Manuales (Para Sustentación)
+## 🧪 5. Casos de Prueba para Demostración Académica
 
-Sigue estos 4 casos de prueba durante tu presentación académica para demostrar que el sistema funciona correctamente:
-
-### Caso 1: Registrar Entrada de Vehículo Nuevo
-1. Dirígete a la opción **"Registrar entrada"** en la barra lateral.
-2. Ingresa los datos:
-   - **Placa:** `COL101`
-   - **Tipo:** `Automóvil`
-   - **Color:** `Azul marino`
-   - **Marca:** `Chevrolet`
-   - **Modelo:** `Onix 2024`
-3. Presiona **"Registrar entrada"**.
-4. **Resultado esperado:**
-   - Mensaje verde de éxito: *"El vehículo COL101 ingresó el [Fecha y hora actual]. Su movimiento está activo."*
-   - La tarjeta lateral muestra el movimiento actual como **Activo**.
-
-### Caso 2: Validación de No Duplicidad (Regla de Negocio)
-1. Permanece en **"Registrar entrada"** o ingresa nuevamente.
-2. Digita la misma placa: `COL101` con cualquier dato.
-3. Presiona **"Registrar entrada"**.
-4. **Resultado esperado:**
-   - Mensaje amarillo de advertencia: *"Este vehículo ya tiene un movimiento activo: No se puede registrar otra entrada para COL101. Primero debes registrar la salida del vehículo."*
-   - Aparece un botón directo que dice **"Ir a registrar salida"**.
-
-### Caso 3: Registrar Salida de Vehículo
-1. Ve a **"Registrar salida"**.
-2. Escribe la placa `COL101` y haz clic en **"Buscar"**.
-3. Verás la ficha técnica del carro, el estado **«En parqueadero»** y el movimiento activo con su hora de ingreso.
-4. Presiona el botón azul **"Registrar salida"**.
-5. **Resultado esperado:**
-   - Mensaje verde de confirmación: *"Se registró la salida de COL101 el [Fecha y hora]. El movimiento ha finalizado."*
-   - El estado cambia inmediatamente a **«Fuera del parqueadero»**.
-   - El estado del movimiento se marca como **Finalizado**.
-
-### Caso 4: Consultar Estado e Historial Cronológico
-1. Ve a **"Consultar vehículo"**, escribe `KLM482` (vehículo de prueba precargado).
-   - Observa cómo indica su estado actual.
-2. Ve a **"Historial de movimientos"**, escribe `KLM482` y presiona **"Buscar"**.
-   - Observa la tabla ordenada del más reciente al más antiguo con sus respectivas entradas, salidas y badges de estado.
-3. Busca una placa que no tenga movimientos (ej: `JTR619`).
-   - Observa el estado vacío limpio: *"No se encontraron movimientos. Verifica que la placa esté escrita correctamente..."*.
+1. **Prueba de Entrada y Asignación de Celda:**
+   - Ingresa una placa nueva (ej: `ABC123`).
+   - El sistema valida el formato de placa colombiana y le asigna automáticamente la primera celda libre (`C-01` si es carro, `M-01` si es moto).
+   - Intenta registrar la misma placa sin haber salido: el sistema rechaza el intento informando que ya tiene un movimiento activo.
+2. **Prueba de Salida en Dos Fases:**
+   - Ve a "Registrar salida" y busca `ABC123`.
+   - **Observa que el movimiento NO se finaliza:** la pantalla muestra los datos del vehículo, la celda ocupada, la hora de entrada y el tiempo transcurrido.
+   - Solo al pulsar el botón azul **"Registrar salida"**, el estado cambia a `FINALIZADO`, se guarda la fecha de salida y se libera la celda.
+3. **Prueba del Panel de Disponibilidad:**
+   - Abre el **Panel de Disponibilidad (80 celdas)**.
+   - Verifica la cuadrícula organizada: 70 carros y 10 motos. La celda del vehículo recién salido ahora figura en verde (**Libre**).
 
 ---
 
-## 🔒 5. Aspectos de Seguridad y Buenas Prácticas Aplicados
+## 🤝 6. Relación entre la Versión React y la Aplicación Flask
 
-- **Prevención de Inyección SQL:** Todas las consultas en `app.py` utilizan tuplas parametrizadas con `%s`. Jamás se concatenan cadenas directas con entradas del usuario.
-- **Transacciones Atómicas:** Se utiliza `conn.start_transaction()` y `FOR UPDATE` para garantizar que no existan inconsistencias de concurrencia al registrar entradas o salidas simultáneas.
-- **Protección de Credenciales:** La contraseña de MySQL reside únicamente en el archivo `.env`, excluido del control de versiones mediante `.gitignore`.
-- **Doble Validación:** Los datos se validan tanto en el navegador con JavaScript para experiencia de usuario, como obligatoriamente en Python Flask para seguridad estricta del backend.
+Para responder a la pregunta del jurado docente sobre por qué existen dos versiones del proyecto:
+
+1. **Versión React (Frontend Simulator / Prototipo de Alta Fidelidad):**
+   - **Propósito:** Actúa como un simulador interactivo en caliente ("Digital Twin") para diseño y experiencia de usuario (UI/UX) conforme a los mockups de Figma.
+   - **Persistencia:** Almacena los datos en el navegador (`localStorage`) para permitir pruebas interactivas inmediatas sin requerir que el evaluador configure MySQL ni Python en su máquina en ese instante.
+   - **Alcance:** Validación rápida de la cuadrícula de 80 celdas, reactividad instantánea y presentación visual.
+
+2. **Versión Python Flask + MySQL (Backend de Producción y Entrega Oficial):**
+   - **Propósito:** Es la solución formal solicitada en la rúbrica universitaria con tecnologías puras: HTML5, CSS3, JavaScript puro, Python, Flask y MySQL relacional con `mysql-connector-python`.
+   - **Persistencia:** Persistencia relacional real en servidor MySQL, con transacciones ACID (`conn.start_transaction()`, `conn.commit()`, `conn.rollback()`), bloqueos pesimistas `FOR UPDATE` para concurrencia, e integridad referencial (`FOREIGN KEY`).
+   - **Arquitectura:** Estructurada en capas desacopladas (Controladores -> Servicios -> DAOs).
+
+Ambas versiones comparten exactamente las mismas reglas de negocio: mensualidad ($250.000 carro / $100.000 moto), capacidad de 80 celdas, validación de placas colombianas y flujo de salida en 2 pasos.

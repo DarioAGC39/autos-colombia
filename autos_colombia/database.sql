@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS movimiento (
     fecha_hora_salida DATETIME NULL,
     estado ENUM('ACTIVO', 'FINALIZADO') NOT NULL DEFAULT 'ACTIVO',
     observaciones VARCHAR(255) NULL,
+    celda VARCHAR(10) NULL,
     placa VARCHAR(10) NOT NULL,
     PRIMARY KEY (id_movimiento),
     CONSTRAINT fk_movimiento_vehiculo 
@@ -57,10 +58,10 @@ INSERT INTO vehiculo (placa, tipo, color, marca, modelo) VALUES
 ('MOT101', 'Motocicleta', 'Negro', 'Yamaha', 'FZ 250 2022')
 ON DUPLICATE KEY UPDATE placa=placa;
 
--- Insertar historial previo de movimientos para KLM482
-INSERT INTO movimiento (fecha_hora_entrada, fecha_hora_salida, estado, observaciones, placa) VALUES
-('2026-10-19 08:10:00', '2026-10-19 17:51:00', 'FINALIZADO', 'Jornada laboral completa', 'KLM482'),
-('2026-10-20 07:58:00', '2026-10-20 17:32:00', 'FINALIZADO', 'Salida puntual', 'KLM482'),
-('2026-10-21 08:26:00', '2026-10-21 18:04:00', 'FINALIZADO', 'Horas extra autorizadas', 'KLM482'),
-('2026-10-22 08:15:00', '2026-10-22 17:38:00', 'FINALIZADO', 'Salida normal', 'KLM482'),
-('2026-10-23 08:32:00', NULL, 'ACTIVO', 'Vehículo actualmente en el parqueadero', 'KLM482');
+-- Insertar historial previo de movimientos para KLM482 (con Celda C-14 activa)
+INSERT INTO movimiento (fecha_hora_entrada, fecha_hora_salida, estado, observaciones, celda, placa) VALUES
+('2026-10-19 08:10:00', '2026-10-19 17:51:00', 'FINALIZADO', 'Jornada laboral completa', 'C-14', 'KLM482'),
+('2026-10-20 07:58:00', '2026-10-20 17:32:00', 'FINALIZADO', 'Salida puntual', 'C-14', 'KLM482'),
+('2026-10-21 08:26:00', '2026-10-21 18:04:00', 'FINALIZADO', 'Horas extra autorizadas', 'C-14', 'KLM482'),
+('2026-10-22 08:15:00', '2026-10-22 17:38:00', 'FINALIZADO', 'Salida normal', 'C-14', 'KLM482'),
+('2026-10-23 08:32:00', NULL, 'ACTIVO', 'Vehículo actualmente en el parqueadero', 'C-14', 'KLM482');

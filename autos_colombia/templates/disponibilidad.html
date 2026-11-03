@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Disponibilidad (80 Celdas) - Autos Colombia{% endblock %}
+{% block header_title %}Panel de disponibilidad (80 celdas){% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+    <div>
+        <h2 class="page-title" style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">Panel de disponibilidad</h2>
+        <p class="page-description" style="color: #64748b; font-size: 14px; margin: 0;">
+            Supervisión y asignación en tiempo real de las <strong>80 celdas</strong> del parqueadero.
+        </p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('registrar_entrada') }}" class="btn btn-primary" style="background: #1e60f2; color: #fff; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; items-center; gap: 6px;">
+            <span>+ Registrar entrada</span>
+        </a>
+    </div>
+</div>
+
+<!-- 1. TARJETAS DE RESUMEN DE CAPACIDAD -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <!-- Ocupación General -->
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 4px;">OCUPACIÓN GENERAL</div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 28px; font-weight: 800; color: #0f172a;">{{ estadisticas.total_ocupadas }}</span>
+            <span style="font-size: 14px; color: #64748b; font-weight: 500;">/ {{ estadisticas.total_celdas }} celdas</span>
+        </div>
+        <div style="margin-top: 10px; background: #e2e8f0; border-radius: 9999px; height: 6px; overflow: hidden;">
+            <div style="background: #1e60f2; height: 100%; width: {{ estadisticas.porcentaje_ocupacion }}%;"></div>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 6px;">{{ estadisticas.porcentaje_ocupacion }}% de capacidad utilizada</div>
+    </div>
+
+    <!-- Total Disponibles -->
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 4px;">TOTAL CELDAS LIBRES</div>
+        <div style="font-size: 28px; font-weight: 800; color: #16a34a;">{{ estadisticas.total_libres }}</div>
+        <div style="font-size: 12px; color: #15803d; font-weight: 600; margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; background: #f0fdf4; padding: 2px 8px; border-radius: 6px;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #22c55e;"></span>
+            Listas para asignar
+        </div>
+    </div>
+
+    <!-- Zona Carros -->
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 4px;">ZONA CARROS (C-01 A C-70)</div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 28px; font-weight: 800; color: #1e60f2;">{{ estadisticas.carros_libres }}</span>
+            <span style="font-size: 14px; color: #64748b; font-weight: 500;">libres de 70</span>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 8px;">
+            {{ estadisticas.carros_ocupados }} vehículos parqueados
+        </div>
+    </div>
+
+    <!-- Zona Motos -->
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 4px;">ZONA MOTOS (M-01 A M-10)</div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 28px; font-weight: 800; color: #7c3aed;">{{ estadisticas.motos_libres }}</span>
+            <span style="font-size: 14px; color: #64748b; font-weight: 500;">libres de 10</span>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 8px;">
+            {{ estadisticas.motos_ocupadas }} motos parqueadas
+        </div>
+    </div>
+</div>
+
+<!-- 2. BARRA DE HERRAMIENTAS Y FILTROS -->
+<div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;">
+    <!-- Filtros de Tipo y Estado -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button onclick="filtrarCeldas('tipo', 'TODOS')" class="filter-btn active" id="btn-tipo-todos" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #0f172a; color: #fff; cursor: pointer;">
+            Todas las celdas (80)
+        </button>
+        <button onclick="filtrarCeldas('tipo', 'CARRO')" class="filter-btn" id="btn-tipo-carro" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #475569; cursor: pointer;">
+            Zona Carros (70)
+        </button>
+        <button onclick="filtrarCeldas('tipo', 'MOTO')" class="filter-btn" id="btn-tipo-moto" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #475569; cursor: pointer;">
+            Zona Motos (10)
+        </button>
+        <span style="border-left: 1px solid #e2e8f0; margin: 0 4px;"></span>
+        <button onclick="filtrarCeldas('estado', 'TODOS')" class="filter-btn-estado active" id="btn-estado-todos" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #0f172a; cursor: pointer;">
+            Todos los estados
+        </button>
+        <button onclick="filtrarCeldas('estado', 'LIBRE')" class="filter-btn-estado" id="btn-estado-libre" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #16a34a; cursor: pointer;">
+            Disponibles ({{ estadisticas.total_libres }})
+        </button>
+        <button onclick="filtrarCeldas('estado', 'OCUPADA')" class="filter-btn-estado" id="btn-estado-ocupada" style="padding: 6px 12px; font-size: 12px; font-weight: 600; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #b91c1c; cursor: pointer;">
+            Ocupadas ({{ estadisticas.total_ocupadas }})
+        </button>
+    </div>
+
+    <!-- Buscador de placa o celda -->
+    <div style="position: relative; min-width: 240px;">
+        <input 
+            type="text" 
+            id="buscador-celdas" 
+            placeholder="Buscar placa o celda..." 
+            onkeyup="buscarEnCuadricula()"
+            style="width: 100%; padding: 7px 12px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; text-transform: uppercase;"
+        >
+    </div>
+</div>
+
+<!-- 3. CUADRÍCULA DE CELDAS ORGANIZADA POR TIPO -->
+<div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+    
+    <!-- SECCIÓN ZONA CARROS -->
+    <div id="seccion-zona-carros" style="margin-bottom: 32px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1e60f2;"></span>
+                <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Zona Carros · 70 Celdas (C-01 a C-70)</h3>
+            </div>
+            <span style="font-size: 12px; color: #64748b; font-weight: 500;">Automóviles, Camionetas, Camiones y Otros</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px;">
+            {% for celda in celdas if celda.tipo == 'CARRO' %}
+            <div 
+                class="celda-card {% if celda.ocupada %}celda-ocupada{% else %}celda-libre{% endif %}"
+                data-tipo="{{ celda.tipo }}"
+                data-codigo="{{ celda.codigo }}"
+                data-ocupada="{{ 'true' if celda.ocupada else 'false' }}"
+                data-placa="{{ celda.movimiento.placa if celda.movimiento else '' }}"
+                onclick="verDetalleCelda('{{ celda.codigo }}', '{{ celda.tipo }}', '{{ 'true' if celda.ocupada else 'false' }}', '{{ celda.movimiento.placa if celda.movimiento else '' }}', '{{ celda.movimiento.marca if celda.movimiento else '' }} {{ celda.movimiento.modelo if celda.movimiento else '' }}', '{{ celda.movimiento.color if celda.movimiento else '' }}', '{{ celda.movimiento.tipo if celda.movimiento else '' }}', '{{ celda.movimiento.fecha_hora_entrada if celda.movimiento else '' }}')"
+                style="border-radius: 8px; border: 1.5px solid {% if celda.ocupada %}#fecaca{% else %}#bbf7d0{% endif %}; background: {% if celda.ocupada %}#fff1f2{% else %}#f0fdf4{% endif %}; padding: 10px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'"
+                onmouseout="this.style.transform='none'; this.style.boxShadow='none'"
+            >
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 800; font-size: 13px; color: {% if celda.ocupada %}#991b1b{% else %}#166534{% endif %};">{{ celda.codigo }}</span>
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: {% if celda.ocupada %}#ef4444{% else %}#22c55e{% endif %};"></span>
+                </div>
+                {% if celda.ocupada %}
+                <div style="font-weight: 800; font-size: 14px; color: #1e293b; letter-spacing: 0.5px;">{{ celda.movimiento.placa }}</div>
+                <div style="font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ celda.movimiento.marca }} {{ celda.movimiento.modelo }}</div>
+                {% else %}
+                <div style="font-size: 12px; font-weight: 600; color: #15803d;">Disponible</div>
+                <div style="font-size: 10px; color: #86efac;">Asignar entrada</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- SECCIÓN ZONA MOTOS -->
+    <div id="seccion-zona-motos">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #7c3aed;"></span>
+                <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Zona Motos · 10 Celdas (M-01 a M-10)</h3>
+            </div>
+            <span style="font-size: 12px; color: #64748b; font-weight: 500;">Exclusivo para Motocicletas</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px;">
+            {% for celda in celdas if celda.tipo == 'MOTO' %}
+            <div 
+                class="celda-card {% if celda.ocupada %}celda-ocupada{% else %}celda-libre{% endif %}"
+                data-tipo="{{ celda.tipo }}"
+                data-codigo="{{ celda.codigo }}"
+                data-ocupada="{{ 'true' if celda.ocupada else 'false' }}"
+                data-placa="{{ celda.movimiento.placa if celda.movimiento else '' }}"
+                onclick="verDetalleCelda('{{ celda.codigo }}', '{{ celda.tipo }}', '{{ 'true' if celda.ocupada else 'false' }}', '{{ celda.movimiento.placa if celda.movimiento else '' }}', '{{ celda.movimiento.marca if celda.movimiento else '' }} {{ celda.movimiento.modelo if celda.movimiento else '' }}', '{{ celda.movimiento.color if celda.movimiento else '' }}', '{{ celda.movimiento.tipo if celda.movimiento else '' }}', '{{ celda.movimiento.fecha_hora_entrada if celda.movimiento else '' }}')"
+                style="border-radius: 8px; border: 1.5px solid {% if celda.ocupada %}#fecaca{% else %}#e9d5ff{% endif %}; background: {% if celda.ocupada %}#fff1f2{% else %}#faf5ff{% endif %}; padding: 10px; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;"
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'"
+                onmouseout="this.style.transform='none'; this.style.boxShadow='none'"
+            >
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 800; font-size: 13px; color: {% if celda.ocupada %}#991b1b{% else %}#6b21a8{% endif %};">{{ celda.codigo }}</span>
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: {% if celda.ocupada %}#ef4444{% else %}#a855f7{% endif %};"></span>
+                </div>
+                {% if celda.ocupada %}
+                <div style="font-weight: 800; font-size: 14px; color: #1e293b; letter-spacing: 0.5px;">{{ celda.movimiento.placa }}</div>
+                <div style="font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ celda.movimiento.marca }} {{ celda.movimiento.modelo }}</div>
+                {% else %}
+                <div style="font-size: 12px; font-weight: 600; color: #7c3aed;">Disponible</div>
+                <div style="font-size: 10px; color: #c084fc;">Asignar moto</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE DETALLE DE CELDA -->
+<div id="modal-detalle-celda" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #fff; border-radius: 16px; max-width: 480px; width: 100%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); position: relative;">
+        <button onclick="cerrarModalCelda()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 18px; color: #94a3b8; cursor: pointer;">✕</button>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;">
+            <div id="modal-icono-tipo" style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; color: #1e60f2; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">
+                C-XX
+            </div>
+            <div>
+                <h3 id="modal-titulo-celda" style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0;">Celda C-14</h3>
+                <span id="modal-subtitulo-tipo" style="font-size: 12px; color: #64748b;">Zona Carros · 1 espacio</span>
+            </div>
+            <div id="modal-badge-estado" style="margin-left: auto; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 700;">
+                Ocupada
+            </div>
+        </div>
+
+        <!-- Contenido Ocupado -->
+        <div id="modal-contenido-ocupada" style="display: none;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 2px;">VEHÍCULO ESTACIONADO</div>
+                <div id="modal-placa" style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: 1px;">KLM482</div>
+                <div id="modal-vehiculo-desc" style="font-size: 13px; color: #334155; font-weight: 500; margin-top: 2px;">Renault Logan 2022</div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; margin-bottom: 20px;">
+                <div style="background: #fff; border: 1px solid #f1f5f9; padding: 10px; border-radius: 8px;">
+                    <span style="color: #64748b; display: block; font-size: 10px;">Color</span>
+                    <strong id="modal-color" style="color: #0f172a;">Gris plata</strong>
+                </div>
+                <div style="background: #fff; border: 1px solid #f1f5f9; padding: 10px; border-radius: 8px;">
+                    <span style="color: #64748b; display: block; font-size: 10px;">Tipo registrado</span>
+                    <strong id="modal-tipo-vehiculo" style="color: #0f172a;">Automóvil</strong>
+                </div>
+                <div style="grid-column: span 2; background: #fff; border: 1px solid #f1f5f9; padding: 10px; border-radius: 8px;">
+                    <span style="color: #64748b; display: block; font-size: 10px;">Fecha y hora de entrada</span>
+                    <strong id="modal-entrada-hora" style="color: #0f172a;">2026-10-23 08:32:00</strong>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button onclick="cerrarModalCelda()" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; cursor: pointer;">
+                    Cerrar
+                </button>
+                <a id="modal-btn-salida" href="#" style="padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; background: #dc2626; color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                    Registrar salida de este vehículo →
+                </a>
+            </div>
+        </div>
+
+        <!-- Contenido Libre -->
+        <div id="modal-contenido-libre" style="display: none;">
+            <div style="text-align: center; padding: 20px 0 10px 0;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: #f0fdf4; color: #16a34a; font-size: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+                    ✓
+                </div>
+                <h4 style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0 0 6px 0;">Esta celda está disponible</h4>
+                <p style="font-size: 12px; color: #64748b; max-width: 320px; margin: 0 auto;">
+                    Puedes ingresar un vehículo y asignarle directamente esta celda de parqueadero.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px;">
+                <button onclick="cerrarModalCelda()" style="padding: 8px 14px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; cursor: pointer;">
+                    Cerrar
+                </button>
+                <a id="modal-btn-entrada" href="{{ url_for('registrar_entrada') }}" style="padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; background: #1e60f2; color: #fff; text-decoration: none;">
+                    + Asignar entrada en esta celda
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let filtroTipoActual = 'TODOS';
+let filtroEstadoActual = 'TODOS';
+
+function filtrarCeldas(tipoFiltro, valor) {
+    if (tipoFiltro === 'tipo') {
+        filtroTipoActual = valor;
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.style.background = '#fff';
+            b.style.color = '#475569';
+        });
+        const activeBtn = document.getElementById('btn-tipo-' + valor.toLowerCase());
+        if (activeBtn) {
+            activeBtn.style.background = '#0f172a';
+            activeBtn.style.color = '#fff';
+        }
+
+        const secCarros = document.getElementById('seccion-zona-carros');
+        const secMotos = document.getElementById('seccion-zona-motos');
+        if (valor === 'CARRO') {
+            secCarros.style.display = 'block';
+            secMotos.style.display = 'none';
+        } else if (valor === 'MOTO') {
+            secCarros.style.display = 'none';
+            secMotos.style.display = 'block';
+        } else {
+            secCarros.style.display = 'block';
+            secMotos.style.display = 'block';
+        }
+    }
+
+    if (tipoFiltro === 'estado') {
+        filtroEstadoActual = valor;
+        document.querySelectorAll('.filter-btn-estado').forEach(b => {
+            b.style.background = '#fff';
+            b.style.color = '#475569';
+        });
+        const activeBtn = document.getElementById('btn-estado-' + valor.toLowerCase());
+        if (activeBtn) {
+            activeBtn.style.background = '#f1f5f9';
+            activeBtn.style.color = '#0f172a';
+        }
+    }
+
+    aplicarFiltros();
+}
+
+function aplicarFiltros() {
+    const q = document.getElementById('buscador-celdas').value.toUpperCase().trim();
+    const celdas = document.querySelectorAll('.celda-card');
+
+    celdas.forEach(card => {
+        const codigo = card.getAttribute('data-codigo') || '';
+        const tipo = card.getAttribute('data-tipo') || '';
+        const ocupada = card.getAttribute('data-ocupada') === 'true';
+        const placa = card.getAttribute('data-placa') || '';
+
+        let cumpleTipo = (filtroTipoActual === 'TODOS') || (tipo === filtroTipoActual);
+        let cumpleEstado = (filtroEstadoActual === 'TODOS') ||
+                           (filtroEstadoActual === 'LIBRE' && !ocupada) ||
+                           (filtroEstadoActual === 'OCUPADA' && ocupada);
+        let cumpleBusqueda = !q || codigo.includes(q) || placa.includes(q);
+
+        if (cumpleTipo && cumpleEstado && cumpleBusqueda) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function buscarEnCuadricula() {
+    aplicarFiltros();
+}
+
+function verDetalleCelda(codigo, tipo, ocupadaStr, placa, vehiculoDesc, color, tipoVehiculo, fechaEntrada) {
+    const modal = document.getElementById('modal-detalle-celda');
+    const ocupada = ocupadaStr === 'true';
+
+    document.getElementById('modal-titulo-celda').innerText = 'Celda ' + codigo;
+    document.getElementById('modal-icono-tipo').innerText = codigo;
+    document.getElementById('modal-subtitulo-tipo').innerText = (tipo === 'CARRO' ? 'Zona Carros (Automóvil/Camioneta)' : 'Zona Motos');
+
+    const badge = document.getElementById('modal-badge-estado');
+    if (ocupada) {
+        badge.innerText = 'Ocupada';
+        badge.style.background = '#fee2e2';
+        badge.style.color = '#b91c1c';
+        document.getElementById('modal-contenido-ocupada').style.display = 'block';
+        document.getElementById('modal-contenido-libre').style.display = 'none';
+
+        document.getElementById('modal-placa').innerText = placa;
+        document.getElementById('modal-vehiculo-desc').innerText = vehiculoDesc;
+        document.getElementById('modal-color').innerText = color;
+        document.getElementById('modal-tipo-vehiculo').innerText = tipoVehiculo;
+        document.getElementById('modal-entrada-hora').innerText = fechaEntrada;
+
+        document.getElementById('modal-btn-salida').href = "{{ url_for('registrar_salida') }}?placa=" + placa;
+    } else {
+        badge.innerText = 'Disponible';
+        badge.style.background = '#dcfce7';
+        badge.style.color = '#15803d';
+        document.getElementById('modal-contenido-ocupada').style.display = 'none';
+        document.getElementById('modal-contenido-libre').style.display = 'block';
+
+        const tipoSugerido = (tipo === 'CARRO' ? 'Automóvil' : 'Motocicleta');
+        document.getElementById('modal-btn-entrada').href = "{{ url_for('registrar_entrada') }}?celda=" + codigo + "&tipo=" + tipoSugerido;
+    }
+
+    modal.style.display = 'flex';
+}
+
+function cerrarModalCelda() {
+    document.getElementById('modal-detalle-celda').style.display = 'none';
+}
+
+// Cerrar con Escape
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModalCelda();
+});
+</script>
+{% endblock %}

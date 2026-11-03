@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Car,
+  Bike,
   Home,
   LogIn,
   LogOut,
@@ -19,8 +20,10 @@ import {
   Calendar,
   User,
   ArrowRight,
-  Database
+  Database,
+  LayoutGrid
 } from 'lucide-react';
+import PanelDisponibilidad from './components/PanelDisponibilidad';
 
 // Tipos de datos para el sistema
 interface Vehiculo {
@@ -34,31 +37,34 @@ interface Vehiculo {
 interface Movimiento {
   id: number;
   placa: string;
+  celda?: string;
   fecha_hora_entrada: string;
   fecha_hora_salida: string | null;
   estado: 'ACTIVO' | 'FINALIZADO';
   observaciones: string;
 }
 
-// Datos de prueba iniciales (Conforme a los mockups de Figma para KLM482)
+// Datos de prueba iniciales (Conforme a los mockups de Figma para KLM482 en celda C-14)
 const VEHICULOS_INICIALES: Record<string, Vehiculo> = {
-  'KLM482': { placa: 'KLM482', tipo: 'Automóvil', color: 'Gris plata', marca: 'Renault', modelo: 'Logan 2022' },
-  'ABC123': { placa: 'ABC123', tipo: 'Automóvil', color: 'Rojo escarlata', marca: 'Mazda', modelo: 'Mazda 3 2021' },
-  'XYZ789': { placa: 'XYZ789', tipo: 'Camioneta', color: 'Blanco', marca: 'Toyota', modelo: 'Prado 2023' },
-  'MOT101': { placa: 'MOT101', tipo: 'Motocicleta', color: 'Negro', marca: 'Yamaha', modelo: 'FZ 250 2022' },
+  'KLM482': { placa: 'KLM482', tipo: 'Carro', color: 'Gris plata', marca: 'Renault', modelo: 'Logan 2022' },
+  'ABC123': { placa: 'ABC123', tipo: 'Carro', color: 'Rojo escarlata', marca: 'Mazda', modelo: 'Mazda 3 2021' },
+  'XYZ789': { placa: 'XYZ789', tipo: 'Carro', color: 'Blanco', marca: 'Toyota', modelo: 'Prado 2023' },
+  'MOT101': { placa: 'MOT101', tipo: 'Moto', color: 'Negro', marca: 'Yamaha', modelo: 'FZ 250 2022' },
 };
 
 const MOVIMIENTOS_INICIALES: Movimiento[] = [
-  { id: 5, placa: 'KLM482', fecha_hora_entrada: '23 oct 2026 · 08:32', fecha_hora_salida: null, estado: 'ACTIVO', observaciones: 'Vehículo actualmente en el parqueadero' },
-  { id: 4, placa: 'KLM482', fecha_hora_entrada: '22 oct 2026 · 08:15', fecha_hora_salida: '22 oct 2026 · 17:38', estado: 'FINALIZADO', observaciones: 'Salida puntual' },
-  { id: 3, placa: 'KLM482', fecha_hora_entrada: '21 oct 2026 · 08:26', fecha_hora_salida: '21 oct 2026 · 18:04', estado: 'FINALIZADO', observaciones: 'Horas extra autorizadas' },
-  { id: 2, placa: 'KLM482', fecha_hora_entrada: '20 oct 2026 · 07:58', fecha_hora_salida: '20 oct 2026 · 17:32', estado: 'FINALIZADO', observaciones: 'Salida normal' },
-  { id: 1, placa: 'KLM482', fecha_hora_entrada: '19 oct 2026 · 08:10', fecha_hora_salida: '19 oct 2026 · 17:51', estado: 'FINALIZADO', observaciones: 'Jornada laboral completa' },
+  { id: 5, placa: 'KLM482', celda: 'C-14', fecha_hora_entrada: '23 oct 2026 · 08:32', fecha_hora_salida: null, estado: 'ACTIVO', observaciones: 'Vehículo actualmente en el parqueadero' },
+  { id: 4, placa: 'KLM482', celda: 'C-14', fecha_hora_entrada: '22 oct 2026 · 08:15', fecha_hora_salida: '22 oct 2026 · 17:38', estado: 'FINALIZADO', observaciones: 'Salida puntual' },
+  { id: 3, placa: 'KLM482', celda: 'C-14', fecha_hora_entrada: '21 oct 2026 · 08:26', fecha_hora_salida: '21 oct 2026 · 18:04', estado: 'FINALIZADO', observaciones: 'Horas extra autorizadas' },
+  { id: 2, placa: 'KLM482', celda: 'C-14', fecha_hora_entrada: '20 oct 2026 · 07:58', fecha_hora_salida: '20 oct 2026 · 17:32', estado: 'FINALIZADO', observaciones: 'Salida normal' },
+  { id: 1, placa: 'KLM482', celda: 'C-14', fecha_hora_entrada: '19 oct 2026 · 08:10', fecha_hora_salida: '19 oct 2026 · 17:51', estado: 'FINALIZADO', observaciones: 'Jornada laboral completa' },
 ];
 
 export default function App() {
-  // Vista activa del sistema administrativo
-  const [seccionActiva, setSeccionActiva] = useState<'inicio' | 'registrar_entrada' | 'registrar_salida' | 'consultar_vehiculo' | 'historial'>('inicio');
+  // Vista activa del sistema administrativo (Etapa 2 incluye 'panel_disponibilidad')
+  const [seccionActiva, setSeccionActiva] = useState<
+    'inicio' | 'registrar_entrada' | 'registrar_salida' | 'consultar_vehiculo' | 'historial' | 'panel_disponibilidad'
+  >('inicio');
 
   // Estado del Parqueadero (Persistente en LocalStorage)
   const [vehiculos, setVehiculos] = useState<Record<string, Vehiculo>>(() => {
@@ -138,18 +144,49 @@ export default function App() {
   };
 
   // ==============================================================
-  // ESTADO PARA "REGISTRAR ENTRADA"
+  // ESTADO PARA "REGISTRAR ENTRADA" Y GESTIÓN DE CELDAS
   // ==============================================================
   const [formEntrada, setFormEntrada] = useState({
     placa: '',
     tipo: '',
     color: '',
     marca: '',
-    modelo: ''
+    modelo: '',
+    celda: ''
   });
   const [erroresEntrada, setErroresEntrada] = useState<Record<string, string>>({});
   const [alertaEntrada, setAlertaEntrada] = useState<{ tipo: 'success' | 'danger' | 'warning'; titulo: string; mensaje: string; activoData?: Movimiento } | null>(null);
   const [entradaExitosa, setEntradaExitosa] = useState(false);
+
+  // Helper para celdas ocupadas actualmente por movimientos activos
+  const celdasOcupadasSet = useMemo(() => {
+    const set = new Set<string>();
+    movimientos
+      .filter(m => m.estado === 'ACTIVO')
+      .forEach(m => {
+        if (m.celda) set.add(m.celda);
+      });
+    return set;
+  }, [movimientos]);
+
+  // Celdas disponibles para Carro (C-01 a C-70) y Moto (M-01 a M-10)
+  const celdasCarrosDisponibles = useMemo(() => {
+    const res: string[] = [];
+    for (let i = 1; i <= 70; i++) {
+      const code = `C-${String(i).padStart(2, '0')}`;
+      if (!celdasOcupadasSet.has(code)) res.push(code);
+    }
+    return res;
+  }, [celdasOcupadasSet]);
+
+  const celdasMotosDisponibles = useMemo(() => {
+    const res: string[] = [];
+    for (let i = 1; i <= 10; i++) {
+      const code = `M-${String(i).padStart(2, '0')}`;
+      if (!celdasOcupadasSet.has(code)) res.push(code);
+    }
+    return res;
+  }, [celdasOcupadasSet]);
 
   // Auto-completado cuando el usuario escribe una placa existente
   const handlePlacaEntradaChange = (val: string) => {
@@ -159,12 +196,16 @@ export default function App() {
     // Si ya tiene 6 caracteres y existe en el registro
     if (limpia.length >= 6 && vehiculos[limpia]) {
       const v = vehiculos[limpia];
+      const esMoto = v.tipo.toLowerCase().includes('moto');
+      const sugerida = esMoto ? celdasMotosDisponibles[0] : celdasCarrosDisponibles[0];
+
       setFormEntrada(prev => ({
         ...prev,
         tipo: v.tipo,
         color: v.color,
         marca: v.marca,
-        modelo: v.modelo
+        modelo: v.modelo,
+        celda: prev.celda || sugerida || ''
       }));
 
       // Verificar si ya tiene un movimiento activo
@@ -184,7 +225,7 @@ export default function App() {
 
   const handleRegistrarEntradaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const { placa, tipo, color, marca, modelo } = formEntrada;
+    const { placa, tipo, color, marca, modelo, celda } = formEntrada;
     const nuevosErrores: Record<string, string> = {};
 
     // Validaciones estrictas
@@ -226,15 +267,22 @@ export default function App() {
     const nuevoVehiculo: Vehiculo = { placa, tipo, color, marca, modelo };
     setVehiculos(prev => ({ ...prev, [placa]: nuevoVehiculo }));
 
+    // Asignar celda sugerida o manual
+    const esMoto = tipo.toLowerCase().includes('moto');
+    const celdaAsignada = celda || (
+      esMoto ? celdasMotosDisponibles[0] : celdasCarrosDisponibles[0]
+    ) || (esMoto ? 'M-01' : 'C-01');
+
     // Crear nuevo movimiento con fecha y hora actual
     const nuevaFecha = getFechaHoraActualFormateada();
     const nuevoMovimiento: Movimiento = {
       id: Date.now(),
       placa,
+      celda: celdaAsignada,
       fecha_hora_entrada: nuevaFecha,
       fecha_hora_salida: null,
       estado: 'ACTIVO',
-      observaciones: 'Ingreso regular registrado en sistema'
+      observaciones: `Ingreso regular registrado en sistema (Celda ${celdaAsignada})`
     };
 
     setMovimientos(prev => [nuevoMovimiento, ...prev]);
@@ -243,13 +291,13 @@ export default function App() {
     setAlertaEntrada({
       tipo: 'success',
       titulo: 'Entrada registrada correctamente',
-      mensaje: `El vehículo ${placa} ingresó el ${nuevaFecha}. Su movimiento está activo.`,
+      mensaje: `El vehículo ${placa} ingresó el ${nuevaFecha} en la celda ${celdaAsignada}. Su movimiento está activo.`,
       activoData: nuevoMovimiento
     });
   };
 
   const limpiarFormEntrada = () => {
-    setFormEntrada({ placa: '', tipo: '', color: '', marca: '', modelo: '' });
+    setFormEntrada({ placa: '', tipo: '', color: '', marca: '', modelo: '', celda: '' });
     setErroresEntrada({});
     setAlertaEntrada(null);
     setEntradaExitosa(false);
@@ -390,6 +438,23 @@ export default function App() {
                 </button>
 
                 <button
+                  onClick={() => setSeccionActiva('panel_disponibilidad')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition text-left ${
+                    seccionActiva === 'panel_disponibilidad'
+                      ? 'bg-[#1e60f2] text-white shadow-md font-semibold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>Panel de disponibilidad</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30">
+                    80 celdas
+                  </span>
+                </button>
+
+                <button
                   onClick={() => {
                     setSeccionActiva('registrar_entrada');
                     setAlertaEntrada(null);
@@ -471,6 +536,7 @@ export default function App() {
                 <span className="text-slate-400">/</span>
                 <span className="font-semibold text-slate-800">
                   {seccionActiva === 'inicio' && 'Inicio'}
+                  {seccionActiva === 'panel_disponibilidad' && 'Panel de disponibilidad (80 Celdas)'}
                   {seccionActiva === 'registrar_entrada' && 'Registrar entrada'}
                   {seccionActiva === 'registrar_salida' && 'Registrar salida'}
                   {seccionActiva === 'consultar_vehiculo' && 'Consultar vehículo'}
@@ -521,8 +587,8 @@ export default function App() {
                     <p className="text-sm text-slate-500 mt-1">Sistema de gestión y control de entrada y salida para parqueadero mensual.</p>
                   </div>
 
-                  {/* Estadísticas */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Estadísticas de Ocupación y Capacidad (80 Celdas: 70 Carros, 10 Motos) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                         <Car className="w-6 h-6" />
@@ -535,11 +601,21 @@ export default function App() {
 
                     <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                        <LayoutGrid className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-slate-900">{80 - totalActivos} / 80</div>
+                        <div className="text-xs font-medium text-slate-500">Celdas disponibles libres</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
                         <Database className="w-6 h-6" />
                       </div>
                       <div>
                         <div className="text-2xl font-extrabold text-slate-900">{totalVehiculosRegistrados}</div>
-                        <div className="text-xs font-medium text-slate-500">Vehículos registrados en total</div>
+                        <div className="text-xs font-medium text-slate-500">Vehículos registrados</div>
                       </div>
                     </div>
 
@@ -554,20 +630,118 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Banner / Widget de Capacidad de Celdas */}
+                  <div className="bg-gradient-to-r from-blue-900 to-indigo-950 rounded-xl p-5 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-blue-300 shrink-0">
+                        <LayoutGrid className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-base text-white">Panel de Disponibilidad en Tiempo Real</h3>
+                        <p className="text-xs text-blue-200 mt-0.5">
+                          80 celdas organizadas por zona: <strong>70 para carros</strong> (C-01 a C-70) y <strong>10 para motos</strong> (M-01 a M-10).
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
+                      <div className="flex items-center gap-2 text-xs bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span>{80 - totalActivos} libres ({celdasCarrosDisponibles.length} carros, {celdasMotosDisponibles.length} motos)</span>
+                      </div>
+                      <button
+                        onClick={() => setSeccionActiva('panel_disponibilidad')}
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shadow-xs"
+                      >
+                        <span>Abrir cuadrícula</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Tarjetas de Tarifas de Mensualidad (Parqueadero Mensual) */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 text-sm">Modalidad de Parqueadero Mensual</h3>
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Abonados Mensuales
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          El sistema opera exclusivamente bajo suscripción mensual. Las entradas y salidas gestionan la ocupación de celdas sin cobro por horas en taquilla.
+                        </p>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-400 shrink-0">
+                        Capacidad: 80 Celdas
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      {/* Carros */}
+                      <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                            <Car className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">Mensualidad Carros</span>
+                            <span className="text-[11px] text-slate-500">70 celdas disponibles (C-01 a C-70)</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-lg font-black text-blue-900">$250.000</span>
+                          <span className="text-[11px] text-slate-500 block font-medium">COP / mes</span>
+                        </div>
+                      </div>
+
+                      {/* Motos */}
+                      <div className="p-4 rounded-xl border border-purple-100 bg-purple-50/40 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0">
+                            <Bike className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-slate-800 block">Mensualidad Motos</span>
+                            <span className="text-[11px] text-slate-500">10 celdas disponibles (M-01 a M-10)</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-lg font-black text-purple-900">$100.000</span>
+                          <span className="text-[11px] text-slate-500 block font-medium">COP / mes</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Accesos rápidos */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                    <button
+                      onClick={() => setSeccionActiva('panel_disponibilidad')}
+                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
+                    >
+                      <div className="flex justify-between items-center mb-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <LayoutGrid className="w-4 h-4" />
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
+                      </div>
+                      <h3 className="font-bold text-slate-800 text-xs mb-1">Celdas (80)</h3>
+                      <p className="text-[11px] text-slate-500 leading-tight">Mapa de ocupación de 70 carros y 10 motos.</p>
+                    </button>
+
                     <button
                       onClick={() => setSeccionActiva('registrar_entrada')}
-                      className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
+                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
                     >
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <div className="flex justify-between items-center mb-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                           <LogIn className="w-4 h-4" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
                       </div>
-                      <h3 className="font-bold text-slate-800 text-sm mb-1">Registrar entrada</h3>
-                      <p className="text-xs text-slate-500">Ingreso de un vehículo al parqueadero con validación de placa.</p>
+                      <h3 className="font-bold text-slate-800 text-xs mb-1">Registrar entrada</h3>
+                      <p className="text-[11px] text-slate-500 leading-tight">Ingreso con asignación de celda.</p>
                     </button>
 
                     <button
@@ -575,16 +749,16 @@ export default function App() {
                         setSeccionActiva('registrar_salida');
                         buscarParaSalida('KLM482');
                       }}
-                      className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
+                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
                     >
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+                      <div className="flex justify-between items-center mb-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
                           <LogOut className="w-4 h-4" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
                       </div>
-                      <h3 className="font-bold text-slate-800 text-sm mb-1">Registrar salida</h3>
-                      <p className="text-xs text-slate-500">Búsqueda por placa y confirmación de salida de vehículos.</p>
+                      <h3 className="font-bold text-slate-800 text-xs mb-1">Registrar salida</h3>
+                      <p className="text-[11px] text-slate-500 leading-tight">Búsqueda y liberación de celda.</p>
                     </button>
 
                     <button
@@ -592,16 +766,16 @@ export default function App() {
                         setSeccionActiva('consultar_vehiculo');
                         buscarParaConsulta('KLM482');
                       }}
-                      className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
+                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
                     >
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <div className="flex justify-between items-center mb-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
                           <Search className="w-4 h-4" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
                       </div>
-                      <h3 className="font-bold text-slate-800 text-sm mb-1">Consultar vehículo</h3>
-                      <p className="text-xs text-slate-500">Verifica si un carro está «En parqueadero» o «Fuera».</p>
+                      <h3 className="font-bold text-slate-800 text-xs mb-1">Consultar vehículo</h3>
+                      <p className="text-[11px] text-slate-500 leading-tight">Verifica estado y celda asignada.</p>
                     </button>
 
                     <button
@@ -668,6 +842,38 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SECCIÓN: PANEL DE DISPONIBILIDAD (80 CELDAS)                  */}
+              {/* ------------------------------------------------------------- */}
+              {seccionActiva === 'panel_disponibilidad' && (
+                <PanelDisponibilidad
+                  movimientosActivos={movimientos.filter(m => m.estado === 'ACTIVO')}
+                  vehiculos={vehiculos}
+                  onRegistrarSalida={(placa) => {
+                    setPlacaBusquedaSalida(placa);
+                    buscarParaSalida(placa);
+                    setSeccionActiva('registrar_salida');
+                  }}
+                  onRegistrarEntradaConCelda={(celda, tipoSugerido) => {
+                    setFormEntrada({
+                      placa: '',
+                      tipo: tipoSugerido,
+                      color: '',
+                      marca: '',
+                      modelo: '',
+                      celda: celda
+                    });
+                    setAlertaEntrada(null);
+                    setSeccionActiva('registrar_entrada');
+                  }}
+                  onVerHistorial={(placa) => {
+                    setPlacaBusquedaHistorial(placa);
+                    buscarParaHistorial(placa);
+                    setSeccionActiva('historial');
+                  }}
+                />
               )}
 
               {/* ------------------------------------------------------------- */}
@@ -746,7 +952,19 @@ export default function App() {
                             </label>
                             <select
                               value={formEntrada.tipo}
-                              onChange={e => setFormEntrada({ ...formEntrada, tipo: e.target.value })}
+                              onChange={e => {
+                                const nuevoTipo = e.target.value;
+                                setFormEntrada(prev => {
+                                  const esMoto = nuevoTipo === 'Moto';
+                                  const sugerida = esMoto ? celdasMotosDisponibles[0] : celdasCarrosDisponibles[0];
+                                  const celdaValida = esMoto ? prev.celda.startsWith('M-') : prev.celda.startsWith('C-');
+                                  return {
+                                    ...prev,
+                                    tipo: nuevoTipo,
+                                    celda: celdaValida ? prev.celda : (sugerida || '')
+                                  };
+                                });
+                              }}
                               disabled={entradaExitosa}
                               className={`w-full px-3.5 py-2.5 rounded-lg border text-sm outline-hidden transition ${
                                 erroresEntrada.tipo
@@ -754,12 +972,9 @@ export default function App() {
                                   : 'border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100'
                               } ${entradaExitosa ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'}`}
                             >
-                              <option value="" disabled>Selecciona el tipo</option>
-                              <option value="Automóvil">Automóvil</option>
-                              <option value="Motocicleta">Motocicleta</option>
-                              <option value="Camioneta">Camioneta</option>
-                              <option value="Camión">Camión</option>
-                              <option value="Otro">Otro</option>
+                              <option value="" disabled>Selecciona el tipo (Carro o Moto)</option>
+                              <option value="Carro">Carro</option>
+                              <option value="Moto">Moto</option>
                             </select>
                             {erroresEntrada.tipo && (
                               <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1 font-medium">
@@ -839,6 +1054,73 @@ export default function App() {
                               <span>{erroresEntrada.modelo}</span>
                             </p>
                           )}
+                        </div>
+
+                        {/* Celda de Estacionamiento Asignada (80 Celdas) */}
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-xs font-bold text-slate-700">
+                              Celda de parqueadero asignada <span className="text-slate-400 font-normal">(Sugerida automáticamente)</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setSeccionActiva('panel_disponibilidad')}
+                              className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1"
+                            >
+                              <span>Ver cuadrícula de celdas</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                            <div>
+                              <select
+                                value={
+                                  formEntrada.celda ||
+                                  (formEntrada.tipo.toLowerCase().includes('moto')
+                                    ? celdasMotosDisponibles[0]
+                                    : celdasCarrosDisponibles[0]) || ''
+                                }
+                                onChange={e => setFormEntrada({ ...formEntrada, celda: e.target.value })}
+                                disabled={entradaExitosa}
+                                className={`w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm font-bold text-slate-800 bg-white focus:border-blue-600 outline-hidden ${
+                                  entradaExitosa ? 'bg-slate-100 cursor-not-allowed' : ''
+                                }`}
+                              >
+                                {formEntrada.tipo.toLowerCase().includes('moto') ? (
+                                  <optgroup label="Zona Motos (M-01 a M-10)">
+                                    {celdasMotosDisponibles.map(c => (
+                                      <option key={c} value={c}>Celda {c} · Disponible</option>
+                                    ))}
+                                    {celdasMotosDisponibles.length === 0 && (
+                                      <option disabled value="">¡No hay celdas para moto libres!</option>
+                                    )}
+                                  </optgroup>
+                                ) : (
+                                  <optgroup label="Zona Carros (C-01 a C-70)">
+                                    {celdasCarrosDisponibles.map(c => (
+                                      <option key={c} value={c}>Celda {c} · Disponible</option>
+                                    ))}
+                                    {celdasCarrosDisponibles.length === 0 && (
+                                      <option disabled value="">¡No hay celdas para carro libres!</option>
+                                    )}
+                                  </optgroup>
+                                )}
+                              </select>
+                            </div>
+
+                            <div className="text-xs">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                {formEntrada.tipo.toLowerCase().includes('moto')
+                                  ? `${celdasMotosDisponibles.length} de 10 motos disponibles`
+                                  : `${celdasCarrosDisponibles.length} de 70 carros disponibles`}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="text-[11px] text-slate-400 block">
+                            Organizado por tipo de vehículo: C-01 a C-70 para carros y M-01 a M-10 para motos.
+                          </span>
                         </div>
 
                         {/* Botones de Acción */}
@@ -1081,10 +1363,16 @@ export default function App() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 rounded-lg border border-slate-200 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-white p-4 rounded-lg border border-slate-200 text-xs">
                             <div>
                               <span className="text-slate-400 block mb-0.5">Placa del vehículo</span>
                               <span className="font-bold text-slate-800">{salidaExitosaData.placa}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block mb-0.5">Celda liberada</span>
+                              <span className="font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 inline-block">
+                                {salidaExitosaData.celda || 'C-14'}
+                              </span>
                             </div>
                             <div>
                               <span className="text-slate-400 block mb-0.5">Fecha y hora de entrada</span>
@@ -1123,10 +1411,16 @@ export default function App() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 rounded-lg border border-slate-200 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-white p-4 rounded-lg border border-slate-200 text-xs">
                             <div>
                               <span className="text-slate-400 block mb-0.5">Placa del vehículo</span>
                               <span className="font-bold text-slate-800">{movActivoSalida.placa}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block mb-0.5">Celda ocupada</span>
+                              <span className="font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200 inline-block">
+                                {movActivoSalida.celda || 'C-14'}
+                              </span>
                             </div>
                             <div>
                               <span className="text-slate-400 block mb-0.5">Fecha y hora de entrada</span>
@@ -1181,7 +1475,8 @@ export default function App() {
                                   tipo: vehiculoSalidaEncontrado.tipo,
                                   color: vehiculoSalidaEncontrado.color,
                                   marca: vehiculoSalidaEncontrado.marca,
-                                  modelo: vehiculoSalidaEncontrado.modelo
+                                  modelo: vehiculoSalidaEncontrado.modelo,
+                                  celda: ''
                                 });
                                 setSeccionActiva('registrar_entrada');
                               }}
@@ -1288,6 +1583,22 @@ export default function App() {
                         </div>
                       </div>
 
+                      {/* Tarifa de Mensualidad del Vehículo */}
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                          <span className="text-slate-600 font-medium">
+                            Plan: <strong>Abonado Mensual</strong> (Sin cobro en taquilla por salida)
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 font-semibold">
+                          <span className="text-slate-500 text-[11px]">Valor mensualidad:</span>
+                          <span className="text-sm font-extrabold text-blue-900 bg-white px-2.5 py-0.5 rounded border border-blue-200">
+                            {vehiculoConsulta.tipo.toLowerCase().includes('moto') ? '$100.000 COP / mes' : '$250.000 COP / mes'}
+                          </span>
+                        </div>
+                      </div>
+
                       {/* Sub-tarjeta de estado del movimiento */}
                       {movActivoConsulta ? (
                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
@@ -1298,10 +1609,16 @@ export default function App() {
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white p-4 rounded-lg border border-slate-200 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-white p-4 rounded-lg border border-slate-200 text-xs">
                             <div>
                               <span className="text-slate-400 block mb-0.5">Placa del vehículo</span>
                               <span className="font-bold text-slate-800">{movActivoConsulta.placa}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block mb-0.5">Celda asignada</span>
+                              <span className="font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200 inline-block">
+                                {movActivoConsulta.celda || 'C-14'}
+                              </span>
                             </div>
                             <div>
                               <span className="text-slate-400 block mb-0.5">Fecha y hora de entrada</span>
@@ -1392,6 +1709,7 @@ export default function App() {
                             <table className="w-full text-left text-sm">
                               <thead>
                                 <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider font-semibold">
+                                  <th className="py-3 px-4">Celda</th>
                                   <th className="py-3 px-4">Fecha y hora de entrada</th>
                                   <th className="py-3 px-4">Fecha y hora de salida</th>
                                   <th className="py-3 px-4">Estado</th>
@@ -1401,6 +1719,11 @@ export default function App() {
                               <tbody className="divide-y divide-slate-100">
                                 {historialResultados.map(m => (
                                   <tr key={m.id} className="hover:bg-slate-50">
+                                    <td className="py-3.5 px-4">
+                                      <span className="font-bold text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                        {m.celda || 'C-14'}
+                                      </span>
+                                    </td>
                                     <td className="py-3.5 px-4 font-medium text-slate-800">{m.fecha_hora_entrada}</td>
                                     <td className="py-3.5 px-4 text-slate-600 font-medium">
                                       {m.fecha_hora_salida || <span className="text-slate-400 font-bold">—</span>}
