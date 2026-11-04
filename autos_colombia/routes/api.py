@@ -12,11 +12,13 @@ from flask import Blueprint, jsonify
 from database import get_db_connection
 from dao.vehiculo_dao import VehiculoDAO
 from dao.movimiento_dao import MovimientoDAO
+from routes.helpers import login_required
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 
 @api_bp.route('/vehiculo/<placa>', endpoint='buscar_vehiculo')
+@login_required
 def buscar_vehiculo(placa):
     """Retorna información en JSON para autocompletar formularios en JS puro."""
     placa_limpia = (placa or '').strip().upper()

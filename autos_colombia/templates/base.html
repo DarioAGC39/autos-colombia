@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,7 +6,7 @@
     <title>{% block title %}Autos Colombia - Control de Parqueadero{% endblock %}</title>
     <!-- Estilos CSS puros del proyecto -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <!-- Fuente tipográfica moderna Inter -->
+    <!-- Fuente tipografica moderna Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
             <!-- Logotipo y Nombre del Sistema -->
             <div class="sidebar-brand">
                 <div class="brand-icon">
-                    <!-- Icono SVG de Automóvil -->
+                    <!-- Icono SVG de Automovil -->
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
                         <circle cx="7" cy="17" r="2"/>
@@ -37,11 +37,11 @@
                 </div>
             </div>
 
-            <!-- Navegación del Sistema -->
+            <!-- Navegacion del Sistema -->
             <div class="sidebar-menu-wrapper">
-                <div class="menu-category">OPERACIÓN DIARIA</div>
+                <div class="menu-category">OPERACION DIARIA</div>
                 <nav class="sidebar-nav">
-                    <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -51,7 +51,7 @@
                         <span class="nav-label">Inicio</span>
                     </a>
 
-                    <a href="{{ url_for('disponibilidad') }}" class="nav-item {% if request.endpoint == 'disponibilidad' %}active{% endif %}">
+                    <a href="{{ url_for('disponibilidad.disponibilidad') }}" class="nav-item {% if request.endpoint == 'disponibilidad.disponibilidad' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect width="7" height="7" x="3" y="3" rx="1"/>
@@ -64,7 +64,7 @@
                         <span class="nav-badge" style="font-size: 10px; background: rgba(30, 96, 242, 0.25); color: #93c5fd; padding: 2px 6px; border-radius: 9999px; margin-left: auto;">80</span>
                     </a>
 
-                    <a href="{{ url_for('registrar_entrada') }}" class="nav-item {% if request.endpoint == 'registrar_entrada' %}active{% endif %}">
+                    <a href="{{ url_for('entradas.registrar_entrada') }}" class="nav-item {% if request.endpoint == 'entradas.registrar_entrada' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -75,7 +75,7 @@
                         <span class="nav-label">Registrar entrada</span>
                     </a>
 
-                    <a href="{{ url_for('registrar_salida') }}" class="nav-item {% if request.endpoint == 'registrar_salida' %}active{% endif %}">
+                    <a href="{{ url_for('salidas.registrar_salida') }}" class="nav-item {% if request.endpoint == 'salidas.registrar_salida' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -86,17 +86,17 @@
                         <span class="nav-label">Registrar salida</span>
                     </a>
 
-                    <a href="{{ url_for('consultar_vehiculo') }}" class="nav-item {% if request.endpoint == 'consultar_vehiculo' %}active{% endif %}">
+                    <a href="{{ url_for('consultas.consultar_vehiculo') }}" class="nav-item {% if request.endpoint == 'consultas.consultar_vehiculo' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"/>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             </svg>
                         </span>
-                        <span class="nav-label">Consultar vehículo</span>
+                        <span class="nav-label">Consultar vehiculo</span>
                     </a>
 
-                    <a href="{{ url_for('historial') }}" class="nav-item {% if request.endpoint == 'historial' %}active{% endif %}">
+                    <a href="{{ url_for('consultas.historial') }}" class="nav-item {% if request.endpoint == 'consultas.historial' %}active{% endif %}">
                         <span class="nav-icon">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"/>
@@ -105,6 +105,21 @@
                         </span>
                         <span class="nav-label">Historial de movimientos</span>
                     </a>
+
+                    {% if session.get('rol') == 'ADMINISTRADOR' %}
+                    <div class="menu-category" style="margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08);">ADMINISTRACION</div>
+                    <a href="{{ url_for('usuarios.listar') }}" class="nav-item {% if request.blueprint == 'usuarios' %}active{% endif %}">
+                        <span class="nav-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Gestion de usuarios</span>
+                    </a>
+                    {% endif %}
                 </nav>
             </div>
 
@@ -114,7 +129,7 @@
                     <span class="status-indicator-dot"></span>
                     <span class="status-text">Sistema disponible</span>
                 </div>
-                <div class="footer-copy">Autos Colombia · 2026</div>
+                <div class="footer-copy">Autos Colombia Â· 2026</div>
             </div>
         </aside>
 
@@ -126,22 +141,36 @@
             <!-- Encabezado superior con breadcrumb y usuario -->
             <header class="topbar">
                 <div class="breadcrumb-area">
-                    <span class="breadcrumb-sub">Control de acceso</span>
+                    <span class="breadcrumb-sub">Autos Colombia</span>
                     <span class="breadcrumb-separator">/</span>
                     <h1 class="breadcrumb-current">{% block header_title %}Control de acceso{% endblock %}</h1>
                 </div>
 
-                <div class="topbar-user">
-                    <div class="user-avatar-circle">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
+                <div class="topbar-user" style="display: flex; align-items: center; gap: 14px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="user-avatar-circle" style="background: {% if session.get('rol') == 'ADMINISTRADOR' %}#7c3aed{% else %}#1e60f2{% endif %}; color: #ffffff;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="user-info">
+                            <span class="user-name" style="font-weight: 600;">{{ session.get('nombre_completo', 'Personal en turno') }}</span>
+                            <span class="user-role" style="display: inline-flex; align-items: center; gap: 4px;">
+                                <span style="display: inline-block; width: 6px; height: 6px; border-radius: 9999px; background: {% if session.get('rol') == 'ADMINISTRADOR' %}#a855f7{% else %}#3b82f6{% endif %};"></span>
+                                {{ session.get('rol', 'EMPLEADO') }}
+                            </span>
+                        </div>
+                    </div>
+                    {% if session.get('usuario_id') %}
+                    <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Cerrar sesion" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border-color); color: var(--text-muted); background: #ffffff; text-decoration: none; transition: all 0.15s ease;" onmouseover="this.style.color='#ef4444'; this.style.borderColor='#fca5a5'; this.style.background='#fef2f2';" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='var(--border-color)'; this.style.background='#ffffff';">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
                         </svg>
-                    </div>
-                    <div class="user-info">
-                        <span class="user-name">Empleado</span>
-                        <span class="user-role">Personal de parqueadero</span>
-                    </div>
+                    </a>
+                    {% endif %}
                 </div>
             </header>
 
@@ -154,11 +183,11 @@
                         <line x1="8" y1="2" x2="8" y2="6"/>
                         <line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
-                    <span id="fecha-hora-texto">23 de octubre de 2026 - 08:30 · Hora de Colombia</span>
+                    <span id="fecha-hora-texto">23 de octubre de 2026 - 08:30 Â· Hora de Colombia</span>
                 </div>
             </div>
 
-            <!-- Contenedor de Mensajes Flash (Éxito, Error, Alerta) -->
+            <!-- Contenedor de Mensajes Flash (Exito, Error, Alerta) -->
             <div class="alerts-container">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
@@ -192,10 +221,10 @@
                                 </div>
                                 <div class="alert-content">
                                     <div class="alert-title">
-                                        {% if category == 'success' %}Operación completada exitosamente
-                                        {% elif category == 'danger' %}Revisa los datos del vehículo
-                                        {% elif category == 'warning' %}Este vehículo ya tiene un movimiento activo
-                                        {% else %}Información del sistema{% endif %}
+                                        {% if category == 'success' %}Operacion completada exitosamente
+                                        {% elif category == 'danger' %}Revisa los datos del vehiculo
+                                        {% elif category == 'warning' %}Este vehiculo ya tiene un movimiento activo
+                                        {% else %}Informacion del sistema{% endif %}
                                     </div>
                                     <div class="alert-text">{{ message }}</div>
                                 </div>
@@ -205,12 +234,12 @@
                 {% endwith %}
             </div>
 
-            <!-- Bloque de contenido específico para cada pantalla -->
+            <!-- Bloque de contenido especifico para cada pantalla -->
             <div class="page-content">
                 {% block content %}{% endblock %}
             </div>
 
-            <!-- Pie de página con nota legal del sistema -->
+            <!-- Pie de pagina con nota legal del sistema -->
             <footer class="main-footer">
                 <span class="footer-note">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -229,3 +258,4 @@
     {% block scripts %}{% endblock %}
 </body>
 </html>
+

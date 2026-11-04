@@ -25,7 +25,7 @@ class MovimientoDAO:
             dict | None: Movimiento activo o None si no se encuentra en el parqueadero.
         """
         sql = """
-            SELECT id_movimiento, fecha_hora_entrada, fecha_hora_salida, estado, observaciones, codigo_celda, placa
+            SELECT id_movimiento, fecha_hora_entrada, fecha_hora_salida, estado, observaciones, celda, placa
             FROM movimiento
             WHERE placa = %s AND estado = 'ACTIVO'
         """
@@ -43,7 +43,7 @@ class MovimientoDAO:
             int: ID generado autoincremental del movimiento.
         """
         sql = """
-            INSERT INTO movimiento (fecha_hora_entrada, estado, observaciones, codigo_celda, placa)
+            INSERT INTO movimiento (fecha_hora_entrada, estado, observaciones, celda, placa)
             VALUES (NOW(), 'ACTIVO', %s, %s, %s)
         """
         cursor.execute(sql, (observaciones, celda, placa))
@@ -73,7 +73,7 @@ class MovimientoDAO:
     def obtener_por_id(cursor, id_movimiento):
         """Consulta un movimiento por su ID primario."""
         sql = """
-            SELECT id_movimiento, fecha_hora_entrada, fecha_hora_salida, estado, observaciones, codigo_celda, placa
+            SELECT id_movimiento, fecha_hora_entrada, fecha_hora_salida, estado, observaciones, celda, placa
             FROM movimiento
             WHERE id_movimiento = %s
         """
@@ -87,7 +87,7 @@ class MovimientoDAO:
         ordenado descendentemente (del más reciente al más antiguo).
         """
         sql = """
-            SELECT id_movimiento, fecha_hora_entrada, fecha_hora_salida, estado, observaciones, codigo_celda, placa
+            SELECT id_movimiento, fecha_hora_entrada, fecha_hora_salida, estado, observaciones, celda, placa
             FROM movimiento
             WHERE placa = %s
             ORDER BY fecha_hora_entrada DESC
@@ -119,7 +119,7 @@ class MovimientoDAO:
         """Obtiene los últimos N movimientos con datos del vehículo."""
         sql = """
             SELECT m.id_movimiento, m.placa, m.fecha_hora_entrada, m.fecha_hora_salida, 
-                   m.estado, m.codigo_celda, v.tipo, v.marca, v.modelo, v.color
+                   m.estado, m.celda, v.tipo, v.marca, v.modelo, v.color
             FROM movimiento m
             INNER JOIN vehiculo v ON m.placa = v.placa
             ORDER BY m.fecha_hora_entrada DESC
@@ -132,7 +132,7 @@ class MovimientoDAO:
     def listar_movimientos_activos_con_vehiculo(cursor):
         """Obtiene todos los movimientos activos para alimentar el panel de disponibilidad de celdas."""
         sql = """
-            SELECT m.id_movimiento, m.placa, m.fecha_hora_entrada, m.codigo_celda,
+            SELECT m.id_movimiento, m.placa, m.fecha_hora_entrada, m.celda,
                    v.tipo, v.marca, v.modelo, v.color
             FROM movimiento m
             INNER JOIN vehiculo v ON m.placa = v.placa

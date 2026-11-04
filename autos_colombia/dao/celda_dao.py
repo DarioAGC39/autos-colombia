@@ -21,13 +21,13 @@ class CeldaDAO:
         celdas = []
         for i in range(1, cls.TOTAL_CARROS + 1):
             celdas.append({
-                'codigo': f"C{i:02d}",
+                'codigo': f"C-{i:02d}",
                 'tipo': 'CARRO',
                 'numero': i
             })
         for i in range(1, cls.TOTAL_MOTOS + 1):
             celdas.append({
-                'codigo': f"M{i:02d}",
+                'codigo': f"M-{i:02d}",
                 'tipo': 'MOTO',
                 'numero': i
             })
@@ -42,10 +42,10 @@ class CeldaDAO:
         Retorna:
             set[str]: Conjunto de códigos (ej: {'C-01', 'C-14', 'M-02'})
         """
-        sql = "SELECT codigo_celda FROM movimiento WHERE estado = 'ACTIVO' AND codigo_celda IS NOT NULL"
+        sql = "SELECT celda FROM movimiento WHERE estado = 'ACTIVO' AND celda IS NOT NULL"
         cursor.execute(sql)
         filas = cursor.fetchall()
-        return {r['codigo_celda'] for r in filas if r.get('codigo_celda')}
+        return {r['celda'] for r in filas if r.get('celda')}
 
     @classmethod
     def obtener_primera_celda_libre(cls, cursor, tipo_vehiculo):
@@ -65,12 +65,12 @@ class CeldaDAO:
 
         if es_moto:
             for i in range(1, cls.TOTAL_MOTOS + 1):
-                codigo = f"M{i:02d}"
+                codigo = f"M-{i:02d}"
                 if codigo not in ocupadas:
                     return codigo
         else:
             for i in range(1, cls.TOTAL_CARROS + 1):
-                codigo = f"C{i:02d}"
+                codigo = f"C-{i:02d}"
                 if codigo not in ocupadas:
                     return codigo
         return None

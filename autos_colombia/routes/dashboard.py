@@ -9,11 +9,13 @@ Responsabilidad: Vista principal y KPIs del parqueadero.
 from flask import Blueprint, render_template, flash
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService
+from routes.helpers import login_required
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
 
 @dashboard_bp.route('/', endpoint='index')
+@login_required
 def index():
     """Muestra el resumen operativo y los últimos 5 movimientos."""
     conn = get_db_connection()

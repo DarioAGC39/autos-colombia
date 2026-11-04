@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Historial de Movimientos - Autos Colombia{% endblock %}
 {% block header_title %}Historial de movimientos{% endblock %}
@@ -6,12 +6,12 @@
 {% block content %}
 <div class="page-header">
     <h2 class="page-title">Historial de movimientos</h2>
-    <p class="page-description">Revisa las entradas y salidas registradas para un vehículo.</p>
+    <p class="page-description">Revisa las entradas y salidas registradas para un vehiculo.</p>
 </div>
 
-<!-- BARRA DE BÚSQUEDA POR PLACA -->
+<!-- BARRA DE BšSQUEDA POR PLACA -->
 <div class="search-card">
-    <form action="{{ url_for('historial') }}" method="GET" class="search-form">
+    <form action="{{ url_for('consultas.historial') }}" method="GET" class="search-form">
         <div class="search-input-group">
             <label for="placa-search" class="search-label">Buscar por placa</label>
             <div class="search-row">
@@ -36,7 +36,7 @@
     </form>
 </div>
 
-<!-- RESULTADO: LISTADO DE MOVIMIENTOS O ESTADO VACÍO -->
+<!-- RESULTADO: LISTADO DE MOVIMIENTOS O ESTADO VACO -->
 {% if movimientos is not none %}
 <div class="history-table-card">
 
@@ -45,7 +45,7 @@
             <h3 class="history-card-title">Movimientos de {{ placa_busqueda }}</h3>
             <span class="history-card-subtitle">
                 {% if movimientos|length > 0 %}
-                    Del más reciente al más antiguo.
+                    Del mas reciente al mas antiguo.
                 {% else %}
                     No hay movimientos asociados a esta placa.
                 {% endif %}
@@ -76,7 +76,7 @@
                             {% if m.fecha_hora_salida %}
                                 {{ m.fecha_hora_salida }}
                             {% else %}
-                                <span class="text-muted font-bold">—</span>
+                                <span class="text-muted font-bold">-</span>
                             {% endif %}
                         </td>
                         <td>
@@ -91,7 +91,7 @@
                             {% endif %}
                         </td>
                         <td class="cell-observation">
-                            {{ m.observaciones or 'Registro estándar' }}
+                            {{ m.observaciones or 'Registro estandar' }}
                         </td>
                     </tr>
                     {% endfor %}
@@ -106,7 +106,7 @@
         </div>
 
     {% else %}
-        <!-- ESTADO VACÍO (PANTALLA EXACTA DEL FIGMA CUANDO NO HAY REGISTROS) -->
+        <!-- ESTADO VACO (PANTALLA EXACTA DEL FIGMA CUANDO NO HAY REGISTROS) -->
         <div class="empty-history-box">
             <div class="empty-history-icon-circle">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -116,7 +116,7 @@
             </div>
             <h4 class="empty-history-title">No se encontraron movimientos</h4>
             <p class="empty-history-subtitle">
-                Verifica que la placa esté escrita correctamente o realiza una nueva búsqueda con otra placa.
+                Verifica que la placa este escrita correctamente o realiza una nueva busqueda con otra placa.
             </p>
         </div>
 
@@ -130,3 +130,4 @@
 {% endif %}
 
 {% endblock %}
+

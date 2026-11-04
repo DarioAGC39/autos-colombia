@@ -9,11 +9,13 @@ Responsabilidad: Consulta de estado de vehículos e historial cronológico.
 from flask import Blueprint, render_template, request, flash
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService, ReglaNegocioException
+from routes.helpers import login_required
 
 consultas_bp = Blueprint('consultas', __name__)
 
 
 @consultas_bp.route('/consultar-vehiculo', methods=['GET'], endpoint='consultar_vehiculo')
+@login_required
 def consultar_vehiculo():
     """Consulta de datos de vehículo y estado (En parqueadero / Fuera del parqueadero)."""
     placa_busqueda = request.args.get('placa', '').strip().upper()
@@ -45,6 +47,7 @@ def consultar_vehiculo():
 
 
 @consultas_bp.route('/historial', methods=['GET'], endpoint='historial')
+@login_required
 def historial():
     """Consulta el historial de movimientos de un vehículo ordenado del más reciente al más antiguo."""
     placa_busqueda = request.args.get('placa', '').strip().upper()

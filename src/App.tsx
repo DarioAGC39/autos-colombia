@@ -21,9 +21,15 @@ import {
   User,
   ArrowRight,
   Database,
-  LayoutGrid
+  LayoutGrid,
+  Users,
+  Shield,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
 import PanelDisponibilidad from './components/PanelDisponibilidad';
+import GestionUsuarios, { Usuario } from './components/GestionUsuarios';
+import LoginScreen from './components/LoginScreen';
 
 // Tipos de datos para el sistema
 interface Vehiculo {
@@ -44,6 +50,32 @@ interface Movimiento {
   observaciones: string;
 }
 
+// Usuarios de prueba iniciales (Iteración 2: Gestión de Usuarios)
+const USUARIOS_INICIALES: Usuario[] = [
+  {
+    id_usuario: 1,
+    nombres: 'Carlos',
+    apellidos: 'Restrepo',
+    identificacion: '1020304050',
+    correo: 'admin@autoscolombia.com',
+    nombre_usuario: 'admin',
+    rol: 'ADMINISTRADOR',
+    estado: 'ACTIVO',
+    fecha_creacion: '15/10/2026'
+  },
+  {
+    id_usuario: 2,
+    nombres: 'Dario',
+    apellidos: 'Guerrero',
+    identificacion: '1098765432',
+    correo: 'empleado@autoscolombia.com',
+    nombre_usuario: 'empleado',
+    rol: 'EMPLEADO',
+    estado: 'ACTIVO',
+    fecha_creacion: '18/10/2026'
+  }
+];
+
 // Datos de prueba iniciales (Conforme a los mockups de Figma para KLM482 en celda C-14)
 const VEHICULOS_INICIALES: Record<string, Vehiculo> = {
   'KLM482': { placa: 'KLM482', tipo: 'Carro', color: 'Gris plata', marca: 'Renault', modelo: 'Logan 2022' },
@@ -61,9 +93,23 @@ const MOVIMIENTOS_INICIALES: Movimiento[] = [
 ];
 
 export default function App() {
-  // Vista activa del sistema administrativo (Etapa 2 incluye 'panel_disponibilidad')
+  // Estado de Usuarios y Sesión (Iteración 2)
+  const [usuarios, setUsuarios] = useState<Usuario[]>(() => {
+    const saved = localStorage.getItem('autos_colombia_usuarios');
+    return saved ? JSON.parse(saved) : USUARIOS_INICIALES;
+  });
+
+  const [usuarioSesion, setUsuarioSesion] = useState<Usuario | null>(() => {
+    const saved = localStorage.getItem('autos_colombia_sesion');
+    if (saved) {
+      try { return JSON.parse(saved); } catch { return USUARIOS_INICIALES[0]; }
+    }
+    return USUARIOS_INICIALES[0]; // Por defecto inicia como Administrador para facilitar la evaluación
+  });
+
+  // Vista activa del sistema administrativo
   const [seccionActiva, setSeccionActiva] = useState<
-    'inicio' | 'registrar_entrada' | 'registrar_salida' | 'consultar_vehiculo' | 'historial' | 'panel_disponibilidad'
+    'inicio' | 'registrar_entrada' | 'registrar_salida' | 'consultar_vehiculo' | 'historial' | 'panel_disponibilidad' | 'gestion_usuarios'
   >('inicio');
 
   // Estado del Parqueadero (Persistente en LocalStorage)
@@ -85,6 +131,198 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('autos_colombia_movimientos', JSON.stringify(movimientos));
   }, [movimientos]);
+
+  useEffect(() => {
+    localStorage.setItem('autos_colombia_usuarios', JSON.stringify(usuarios));
+  }, [usuarios]);
+
+  useEffect(() => {
+    if (usuarioSesion) {
+      localStorage.setItem('autos_colombia_sesion', JSON.stringify(usuarioSesion));
+    } else {
+      localStorage.removeItem('autos_colombia_sesion');
+    }
+  }, [usuarioSesion]);
+
+  // Protección de rutas RBAC (RF-09): Si un Empleado intenta ir a 'gestion_usuarios'
+  useEffect(() => {
+    if (seccionActiva === 'gestion_usuarios' && usuarioSesion?.rol !== 'ADMINISTRADOR') {
+      setSeccionActiva('inicio');
+      setAlertaGeneral({
+        tipo: 'danger',
+        mensaje: 'Acceso denegado: La sección de Gestión de Usuarios requiere rol de Administrador.'
+      });
+    }
+  }, [seccionActiva, usuarioSesion]);
+
+  // Handlers para el Módulo de Usuarios
+  const handleCrearUsuario = (datos: {
+    nombres: string;
+    apellidos: string;
+    identificacion: string;
+    correo: string;
+    nombre_usuario: string;
+    rol: 'ADMINISTRADOR' | 'EMPLEADO';
+    estado: 'ACTIVO' | 'INACTIVO';
+    password: string;
+  }) => {
+    // Unicidad de cédula
+    if (usuarios.some(u => u.identificacion === datos.identificacion.trim())) {
+      return { success: false, error: `Ya existe un usuario con la identificación ${datos.identificacion}.` };
+    }
+    // Unicidad de correo
+    if (usuarios.some(u => u.correo.toLowerCase() === datos.correo.trim().toLowerCase())) {
+      return { success: false, error: `El correo ${datos.correo} ya está registrado.` };
+    }
+    // Unicidad de username
+    if (usuarios.some(u => u.nombre_usuario.toLowerCase() === datos.nombre_usuario.trim().toLowerCase())) {
+      return { success: false, error: `El nombre de usuario @${datos.nombre_usuario} ya está en uso.` };
+    }
+
+    const nuevoId = Math.max(...usuarios.map(u => u.id_usuario), 0) + 1;
+    const ahora = new Date();
+    const fecha = `${String(ahora.getDate()).padStart(2, '0')}/${String(ahora.getMonth() + 1).padStart(2, '0')}/${ahora.getFullYear()}`;
+
+    const nuevoUsuario: Usuario = {
+      id_usuario: nuevoId,
+      nombres: datos.nombres.trim(),
+      apellidos: datos.apellidos.trim(),
+      identificacion: datos.identificacion.trim(),
+      correo: datos.correo.trim().toLowerCase(),
+      nombre_usuario: datos.nombre_usuario.trim().toLowerCase(),
+      rol: datos.rol,
+      estado: datos.estado,
+      fecha_creacion: fecha
+    };
+
+    setUsuarios(prev => [nuevoUsuario, ...prev]);
+    return { success: true };
+  };
+
+  const handleActualizarUsuario = (
+    id_usuario: number,
+    datos: {
+      nombres: string;
+      apellidos: string;
+      identificacion: string;
+      correo: string;
+      nombre_usuario: string;
+      rol: 'ADMINISTRADOR' | 'EMPLEADO';
+      estado: 'ACTIVO' | 'INACTIVO';
+      password?: string;
+    }
+  ) => {
+    // Unicidad excluyendo el actual
+    if (usuarios.some(u => u.id_usuario !== id_usuario && u.identificacion === datos.identificacion.trim())) {
+      return { success: false, error: `La identificación ${datos.identificacion} ya pertenece a otro usuario.` };
+    }
+    if (usuarios.some(u => u.id_usuario !== id_usuario && u.correo.toLowerCase() === datos.correo.trim().toLowerCase())) {
+      return { success: false, error: `El correo ${datos.correo} ya pertenece a otro usuario.` };
+    }
+    if (usuarios.some(u => u.id_usuario !== id_usuario && u.nombre_usuario.toLowerCase() === datos.nombre_usuario.trim().toLowerCase())) {
+      return { success: false, error: `El nombre de usuario @${datos.nombre_usuario} ya está ocupado.` };
+    }
+
+    // Protección del último Administrador activo
+    const actual = usuarios.find(u => u.id_usuario === id_usuario);
+    if (actual && actual.rol === 'ADMINISTRADOR') {
+      const adminsActivos = usuarios.filter(u => u.rol === 'ADMINISTRADOR' && u.estado === 'ACTIVO').length;
+      const pasaAEmpleado = datos.rol !== 'ADMINISTRADOR';
+      const pasaAInactivo = datos.estado !== 'ACTIVO';
+      if ((pasaAEmpleado || pasaAInactivo) && adminsActivos <= 1) {
+        return {
+          success: false,
+          error: 'Operación denegada: Este usuario es el único Administrador activo. Asigna otro Administrador antes de modificarlo.'
+        };
+      }
+    }
+
+    setUsuarios(prev =>
+      prev.map(u => {
+        if (u.id_usuario === id_usuario) {
+          const modificado: Usuario = {
+            ...u,
+            nombres: datos.nombres.trim(),
+            apellidos: datos.apellidos.trim(),
+            identificacion: datos.identificacion.trim(),
+            correo: datos.correo.trim().toLowerCase(),
+            nombre_usuario: datos.nombre_usuario.trim().toLowerCase(),
+            rol: datos.rol,
+            estado: datos.estado
+          };
+          // Si el usuario en sesión es el mismo que se editó, actualizar sesión activa
+          if (usuarioSesion?.id_usuario === id_usuario) {
+            setUsuarioSesion(modificado);
+          }
+          return modificado;
+        }
+        return u;
+      })
+    );
+    return { success: true };
+  };
+
+  const handleCambiarEstadoUsuario = (id_usuario: number, nuevo_estado: 'ACTIVO' | 'INACTIVO') => {
+    const usuario = usuarios.find(u => u.id_usuario === id_usuario);
+    if (!usuario) return { success: false, error: 'Usuario no encontrado.' };
+
+    if (nuevo_estado === 'INACTIVO' && usuario.rol === 'ADMINISTRADOR') {
+      const adminsActivos = usuarios.filter(u => u.rol === 'ADMINISTRADOR' && u.estado === 'ACTIVO').length;
+      if (adminsActivos <= 1) {
+        return {
+          success: false,
+          error: 'No puedes desactivar este usuario porque es el único Administrador activo del sistema.'
+        };
+      }
+    }
+
+    setUsuarios(prev =>
+      prev.map(u => {
+        if (u.id_usuario === id_usuario) {
+          const mod = { ...u, estado: nuevo_estado };
+          if (usuarioSesion?.id_usuario === id_usuario) {
+            setUsuarioSesion(mod);
+          }
+          return mod;
+        }
+        return u;
+      })
+    );
+    return { success: true };
+  };
+
+  const handleLoginExitoso = (u: Usuario) => {
+    setUsuarioSesion(u);
+    setSeccionActiva('inicio');
+    setAlertaGeneral({
+      tipo: 'success',
+      mensaje: `¡Bienvenido, ${u.nombres}! Has iniciado sesión como ${u.rol.toLowerCase()}.`
+    });
+  };
+
+  const handleLogout = () => {
+    setUsuarioSesion(null);
+  };
+
+  const handleToggleRolDemo = () => {
+    if (!usuarioSesion) return;
+    const nuevoRol = usuarioSesion.rol === 'ADMINISTRADOR' ? 'EMPLEADO' : 'ADMINISTRADOR';
+    const usuarioSimulado: Usuario = {
+      ...usuarioSesion,
+      rol: nuevoRol,
+      nombres: nuevoRol === 'ADMINISTRADOR' ? 'Carlos' : 'Dario',
+      apellidos: nuevoRol === 'ADMINISTRADOR' ? 'Restrepo' : 'Guerrero',
+      nombre_usuario: nuevoRol === 'ADMINISTRADOR' ? 'admin' : 'empleado'
+    };
+    setUsuarioSesion(usuarioSimulado);
+    if (nuevoRol === 'EMPLEADO' && seccionActiva === 'gestion_usuarios') {
+      setSeccionActiva('inicio');
+    }
+    setAlertaGeneral({
+      tipo: 'info',
+      mensaje: `Modo de prueba: Ahora estás navegando con el rol ${nuevoRol}.`
+    });
+  };
 
   // Reloj Colombia en tiempo real
   const [horaColombia, setHoraColombia] = useState<string>('23 de octubre de 2026 - 08:32 · Hora de Colombia');
@@ -406,6 +644,11 @@ export default function App() {
   const totalVehiculosRegistrados = Object.keys(vehiculos).length;
   const salidasFinalizadas = movimientos.filter(m => m.estado === 'FINALIZADO').length;
 
+  // Si no hay sesión activa, mostrar pantalla de Login (RF-01)
+  if (!usuarioSesion) {
+    return <LoginScreen usuarios={usuarios} onLoginExitoso={handleLoginExitoso} />;
+  }
+
   return (
     <div className="min-h-screen flex bg-[#f8fafc] text-[#0f172a] font-sans antialiased">
       {/* SIDEBAR AZUL OSCURO (Fiel a los mockups de Figma) */}
@@ -513,6 +756,32 @@ export default function App() {
                   <Clock className="w-4 h-4" />
                   <span>Historial de movimientos</span>
                 </button>
+
+                {/* Sección Exclusiva para Rol Administrador (RF-09) */}
+                {usuarioSesion?.rol === 'ADMINISTRADOR' && (
+                  <div className="pt-3 mt-3 border-t border-white/10">
+                    <span className="text-[11px] font-bold text-purple-400 tracking-wider block px-3 mb-2 flex items-center justify-between">
+                      <span>ADMINISTRACIÓN</span>
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+                    </span>
+                    <button
+                      onClick={() => setSeccionActiva('gestion_usuarios')}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition text-left ${
+                        seccionActiva === 'gestion_usuarios'
+                          ? 'bg-purple-600 text-white shadow-md font-semibold'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Users className="w-4 h-4 text-purple-400" />
+                        <span>Gestión de usuarios</span>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-400/30">
+                        Admin
+                      </span>
+                    </button>
+                  </div>
+                )}
               </nav>
             </div>
 
@@ -541,18 +810,52 @@ export default function App() {
                   {seccionActiva === 'registrar_salida' && 'Registrar salida'}
                   {seccionActiva === 'consultar_vehiculo' && 'Consultar vehículo'}
                   {seccionActiva === 'historial' && 'Historial de movimientos'}
+                  {seccionActiva === 'gestion_usuarios' && 'Gestión de usuarios y permisos'}
                 </span>
               </div>
 
-              {/* Perfil del Operador */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-                  <User className="w-4 h-4" />
+              {/* Controles de Sesión y Perfil del Operador */}
+              <div className="flex items-center gap-4">
+                {/* Botón rápido para alternar roles en pruebas */}
+                <button
+                  onClick={handleToggleRolDemo}
+                  title="Alternar rol para verificar restricciones de acceso RBAC"
+                  className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                >
+                  <RotateCcw className="w-3 h-3 text-slate-500" />
+                  <span>Probar como: {usuarioSesion?.rol === 'ADMINISTRADOR' ? '👷 Empleado' : '👑 Administrador'}</span>
+                </button>
+
+                {/* Perfil del Operador */}
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center border font-bold text-xs ${
+                    usuarioSesion?.rol === 'ADMINISTRADOR'
+                      ? 'bg-purple-100 text-purple-700 border-purple-200'
+                      : 'bg-blue-100 text-blue-700 border-blue-200'
+                  }`}>
+                    {usuarioSesion?.rol === 'ADMINISTRADOR' ? 'AD' : 'EM'}
+                  </div>
+                  <div className="text-left leading-tight">
+                    <span className="block text-xs font-bold text-slate-800">
+                      {usuarioSesion?.nombres} {usuarioSesion?.apellidos}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        usuarioSesion?.rol === 'ADMINISTRADOR' ? 'bg-purple-500' : 'bg-blue-500'
+                      }`}></span>
+                      {usuarioSesion?.rol}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-left leading-tight">
-                  <span className="block text-xs font-bold text-slate-800">Empleado</span>
-                  <span className="text-[11px] text-slate-400">Personal de parqueadero</span>
-                </div>
+
+                {/* Botón Cerrar Sesión (RF-02) */}
+                <button
+                  onClick={handleLogout}
+                  title="Cerrar sesión"
+                  className="w-9 h-9 rounded-lg border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             </header>
 
@@ -1770,6 +2073,19 @@ export default function App() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SECCIÓN 6: GESTIÓN DE USUARIOS Y ROLES (ITERACIÓN 2)          */}
+              {/* ------------------------------------------------------------- */}
+              {seccionActiva === 'gestion_usuarios' && (
+                <GestionUsuarios
+                  usuarios={usuarios}
+                  usuarioActual={usuarioSesion}
+                  onCrearUsuario={handleCrearUsuario}
+                  onActualizarUsuario={handleActualizarUsuario}
+                  onCambiarEstado={handleCambiarEstadoUsuario}
+                />
               )}
 
             </div>

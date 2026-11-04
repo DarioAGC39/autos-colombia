@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Registrar Salida - Autos Colombia{% endblock %}
 {% block header_title %}Registrar salida{% endblock %}
@@ -6,12 +6,12 @@
 {% block content %}
 <div class="page-header">
     <h2 class="page-title">Registrar salida</h2>
-    <p class="page-description">Busca el vehículo y confirma su salida del parqueadero.</p>
+    <p class="page-description">Busca el vehiculo y confirma su salida del parqueadero.</p>
 </div>
 
-<!-- BARRA DE BÚSQUEDA POR PLACA -->
+<!-- BARRA DE BšSQUEDA POR PLACA -->
 <div class="search-card">
-    <form action="{{ url_for('registrar_salida') }}" method="GET" class="search-form">
+    <form action="{{ url_for('salidas.registrar_salida') }}" method="GET" class="search-form">
         <div class="search-input-group">
             <label for="placa-search" class="search-label">Buscar por placa</label>
             <div class="search-row">
@@ -36,11 +36,11 @@
     </form>
 </div>
 
-<!-- RESULTADO DE LA BÚSQUEDA -->
+<!-- RESULTADO DE LA BšSQUEDA -->
 {% if vehiculo %}
 <div class="vehicle-result-card">
 
-    <!-- Encabezado de la ficha del vehículo -->
+    <!-- Encabezado de la ficha del vehiculo -->
     <div class="vehicle-card-header">
         <div class="vehicle-badge-profile">
             <div class="vehicle-icon-box">
@@ -70,10 +70,10 @@
         </div>
     </div>
 
-    <!-- Grilla con datos técnicos del vehículo -->
+    <!-- Grilla con datos tecnicos del vehiculo -->
     <div class="vehicle-details-grid">
         <div class="detail-column">
-            <span class="detail-label">Tipo de vehículo</span>
+            <span class="detail-label">Tipo de vehiculo</span>
             <span class="detail-value">{{ vehiculo.tipo }}</span>
         </div>
         <div class="detail-column">
@@ -90,7 +90,7 @@
         </div>
     </div>
 
-    <!-- CASO 1: SALIDA REGISTRADA CON ÉXITO (PANTALLA DE RESUMEN FINAL) -->
+    <!-- CASO 1: SALIDA REGISTRADA CON EXITO (PANTALLA DE RESUMEN FINAL) -->
     {% if salida_exitosa and resumen_salida %}
     <div class="movement-active-box mt-6">
         <div class="movement-box-header">
@@ -102,7 +102,7 @@
 
         <div class="movement-table-summary">
             <div class="summary-col">
-                <span class="summary-label">Placa del vehículo</span>
+                <span class="summary-label">Placa del vehiculo</span>
                 <span class="summary-value">{{ resumen_salida.placa }}</span>
             </div>
             <div class="summary-col">
@@ -116,14 +116,14 @@
         </div>
 
         <div class="mt-6 flex-end">
-            <a href="{{ url_for('registrar_salida') }}" class="btn btn-primary">
+            <a href="{{ url_for('salidas.registrar_salida') }}" class="btn btn-primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span>Registrar otra salida</span>
             </a>
         </div>
     </div>
 
-    <!-- CASO 2: EL VEHÍCULO TIENE MOVIMIENTO ACTIVO (LISTO PARA CONFIRMAR SALIDA) -->
+    <!-- CASO 2: EL VEHCULO TIENE MOVIMIENTO ACTIVO (LISTO PARA CONFIRMAR SALIDA) -->
     {% elif movimiento_activo %}
     <div class="movement-active-box mt-6">
         <div class="movement-box-header">
@@ -135,7 +135,7 @@
 
         <div class="movement-table-summary">
             <div class="summary-col">
-                <span class="summary-label">Placa del vehículo</span>
+                <span class="summary-label">Placa del vehiculo</span>
                 <span class="summary-value">{{ movimiento_activo.placa }}</span>
             </div>
             <div class="summary-col">
@@ -144,20 +144,20 @@
             </div>
             <div class="summary-col">
                 <span class="summary-label">Fecha y hora de salida</span>
-                <span class="summary-value text-muted">—</span>
+                <span class="summary-value text-muted">-</span>
             </div>
         </div>
 
         <p class="movement-warning-caption">
-            Al registrar la salida, se finalizará el movimiento activo de este vehículo.
+            Al registrar la salida, se finalizara el movimiento activo de este vehiculo.
         </p>
 
         <!-- Formulario para confirmar la salida en MySQL -->
-        <form action="{{ url_for('registrar_salida') }}" method="POST" class="mt-6 flex-actions-end">
+        <form action="{{ url_for('salidas.registrar_salida') }}" method="POST" class="mt-6 flex-actions-end">
             <input type="hidden" name="placa" value="{{ vehiculo.placa }}">
             <input type="hidden" name="accion" value="confirmar_salida">
             
-            <a href="{{ url_for('index') }}" class="btn btn-secondary mr-3">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary mr-3">
                 Cancelar
             </a>
             <button type="submit" class="btn btn-primary btn-exit-action">
@@ -167,7 +167,7 @@
         </form>
     </div>
 
-    <!-- CASO 3: VEHÍCULO REGISTRADO PERO SIN MOVIMIENTO ACTIVO -->
+    <!-- CASO 3: VEHCULO REGISTRADO PERO SIN MOVIMIENTO ACTIVO -->
     {% else %}
     <div class="empty-state-card mt-6">
         <div class="empty-state-icon">
@@ -175,12 +175,12 @@
         </div>
         <h4 class="empty-state-title">No existe un movimiento activo</h4>
         <p class="empty-state-text">
-            El vehículo <strong>{{ vehiculo.placa }}</strong> se encuentra fuera del parqueadero.
+            El vehiculo <strong>{{ vehiculo.placa }}</strong> se encuentra fuera del parqueadero.
             No es posible registrar una salida porque no tiene un ingreso activo registrado.
         </p>
         <div class="mt-4">
-            <a href="{{ url_for('registrar_entrada') }}" class="btn btn-secondary">
-                Registrar nueva entrada para este vehículo
+            <a href="{{ url_for('entradas.registrar_entrada') }}" class="btn btn-secondary">
+                Registrar nueva entrada para este vehiculo
             </a>
         </div>
     </div>
@@ -190,3 +190,4 @@
 {% endif %}
 
 {% endblock %}
+

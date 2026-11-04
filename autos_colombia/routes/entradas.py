@@ -10,11 +10,13 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, flash
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService, ReglaNegocioException
+from routes.helpers import login_required
 
 entradas_bp = Blueprint('entradas', __name__)
 
 
 @entradas_bp.route('/registrar-entrada', methods=['GET', 'POST'], endpoint='registrar_entrada')
+@login_required
 def registrar_entrada():
     """Formulario y procesamiento de registro de entrada."""
     if request.method == 'GET':
@@ -39,13 +41,13 @@ def registrar_entrada():
         fecha_ingreso = nuevo_mov['fecha_hora_entrada']
         fecha_str = fecha_ingreso.strftime('%d de %B de %Y a las %H:%M') if isinstance(fecha_ingreso, datetime) else str(fecha_ingreso)
 
-        flash(f"El vehículo {datos['placa']} ingresó el {fecha_str} en celda {nuevo_mov.get('codigo_celda', 'Asignada')}. Su movimiento está activo.", "success")
+        flash(f"El vehículo {datos['placa']} ingresó el {fecha_str} en celda {nuevo_mov.get('celda', 'Asignada')}. Su movimiento está activo.", "success")
         return render_template(
             'registrar_entrada.html',
             datos=datos,
             errores={},
             exito=True,
-            movimiento_activo={'placa': datos['placa'], 'fecha_hora_entrada': fecha_ingreso, 'estado': 'ACTIVO', 'codigo_celda': nuevo_mov.get('codigo_celda')}
+            movimiento_activo={'placa': datos['placa'], 'fecha_hora_entrada': fecha_ingreso, 'estado': 'ACTIVO', 'celda': nuevo_mov.get('celda')}
         )
 
     except ReglaNegocioException as rn_err:

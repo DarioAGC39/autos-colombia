@@ -10,11 +10,13 @@ Responsabilidad: Visualización en tiempo real de las 80 celdas
 from flask import Blueprint, render_template, flash, redirect, url_for
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService
+from routes.helpers import login_required
 
 disponibilidad_bp = Blueprint('disponibilidad', __name__)
 
 
 @disponibilidad_bp.route('/disponibilidad', endpoint='disponibilidad')
+@login_required
 def disponibilidad():
     """Genera el panel de ocupación de las 80 celdas del parqueadero mensual."""
     conn = get_db_connection()

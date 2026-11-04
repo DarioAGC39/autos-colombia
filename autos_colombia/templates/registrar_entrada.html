@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Registrar Entrada - Autos Colombia{% endblock %}
 {% block header_title %}Registrar entrada{% endblock %}
@@ -6,7 +6,7 @@
 {% block content %}
 <div class="page-header">
     <h2 class="page-title">Registrar entrada</h2>
-    <p class="page-description">Registra el ingreso de un vehículo al parqueadero.</p>
+    <p class="page-description">Registra el ingreso de un vehiculo al parqueadero.</p>
 </div>
 
 <div class="grid-layout-two-columns">
@@ -14,17 +14,17 @@
     <!-- COLUMNA IZQUIERDA: FORMULARIO PRINCIPAL -->
     <div class="form-container-card">
         <div class="card-header-clean">
-            <h3 class="card-title">Datos del vehículo</h3>
-            <p class="card-subtitle">Completa la información para registrar el ingreso.</p>
+            <h3 class="card-title">Datos del vehiculo</h3>
+            <p class="card-subtitle">Completa la informacion para registrar el ingreso.</p>
             <span class="required-note">Todos los campos son obligatorios.</span>
         </div>
 
-        <form action="{{ url_for('registrar_entrada') }}" method="POST" id="form-registrar-entrada" novalidate>
+        <form action="{{ url_for('entradas.registrar_entrada') }}" method="POST" id="form-registrar-entrada" novalidate>
             
-            <!-- Fila 1: Placa y Tipo de vehículo -->
+            <!-- Fila 1: Placa y Tipo de vehiculo -->
             <div class="form-row">
                 <div class="form-group {% if errores.placa %}has-error{% endif %}">
-                    <label for="placa" class="form-label">Placa del vehículo <span class="required-star">*</span></label>
+                    <label for="placa" class="form-label">Placa del vehiculo <span class="required-star">*</span></label>
                     <input 
                         type="text" 
                         id="placa" 
@@ -48,7 +48,7 @@
                 </div>
 
                 <div class="form-group {% if errores.tipo %}has-error{% endif %}">
-                    <label for="tipo" class="form-label">Tipo de vehículo <span class="required-star">*</span></label>
+                    <label for="tipo" class="form-label">Tipo de vehiculo <span class="required-star">*</span></label>
                     <select 
                         id="tipo" 
                         name="tipo" 
@@ -57,7 +57,7 @@
                         required
                     >
                         <option value="" disabled {% if not datos or not datos.tipo %}selected{% endif %}>Selecciona el tipo (Carro o Moto)</option>
-                        <option value="Carro" {% if datos and datos.tipo in ['Carro', 'Automóvil'] %}selected{% endif %}>Carro</option>
+                        <option value="Carro" {% if datos and datos.tipo in ['Carro', 'Automovil'] %}selected{% endif %}>Carro</option>
                         <option value="Moto" {% if datos and datos.tipo in ['Moto', 'Motocicleta'] %}selected{% endif %}>Moto</option>
                     </select>
                     {% if errores.tipo %}
@@ -139,8 +139,8 @@
             <div class="form-row">
                 <div class="form-group full-width">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <label for="celda" class="form-label" style="margin: 0;">Celda asignada <span style="color: #64748b; font-weight: normal;">(Opcional, se asigna automáticamente)</span></label>
-                        <a href="{{ url_for('disponibilidad') }}" style="font-size: 11px; color: #1e60f2; font-weight: 600; text-decoration: none;">Ver panel de celdas →</a>
+                        <label for="celda" class="form-label" style="margin: 0;">Celda asignada <span style="color: #64748b; font-weight: normal;">(Opcional, se asigna automaticamente)</span></label>
+                        <a href="{{ url_for('disponibilidad.disponibilidad') }}" style="font-size: 11px; color: #1e60f2; font-weight: 600; text-decoration: none;">Ver panel de celdas â†’</a>
                     </div>
                     <input 
                         type="text" 
@@ -153,13 +153,13 @@
                         maxlength="10"
                     >
                     <span style="font-size: 11px; color: #64748b; display: block; margin-top: 4px;">
-                        Si se deja en blanco, el sistema asignará la primera celda disponible según el tipo de vehículo.
+                        Si se deja en blanco, el sistema asignara la primera celda disponible segun el tipo de vehiculo.
                     </span>
                 </div>
             </div>
             <div class="form-actions-row">
                 {% if exito %}
-                    <a href="{{ url_for('registrar_entrada') }}" class="btn btn-secondary">
+                    <a href="{{ url_for('entradas.registrar_entrada') }}" class="btn btn-secondary">
                         Nueva entrada
                     </a>
                     <button type="button" class="btn btn-primary" disabled>
@@ -180,7 +180,7 @@
         </form>
     </div>
 
-    <!-- COLUMNA DERECHA: TARJETAS DE INFORMACIÓN Y ESTADO -->
+    <!-- COLUMNA DERECHA: TARJETAS DE INFORMACION Y ESTADO -->
     <div class="info-sidebar-column">
 
         <!-- Tarjeta Informativa 1 -->
@@ -192,10 +192,10 @@
                 <h4 class="info-card-title">Antes de registrar</h4>
             </div>
             <p class="info-card-text">
-                Verifica la placa y las características del vehículo antes de confirmar su ingreso.
+                Verifica la placa y las caracteristicas del vehiculo antes de confirmar su ingreso.
             </p>
             <p class="info-card-highlight">
-                Solo puede existir un movimiento activo por vehículo.
+                Solo puede existir un movimiento activo por vehiculo.
             </p>
         </div>
 
@@ -205,10 +205,10 @@
                 <div class="info-card-icon icon-sky">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
-                <h4 class="info-card-title">Registro automático</h4>
+                <h4 class="info-card-title">Registro automatico</h4>
             </div>
             <p class="info-card-text">
-                La fecha y hora de entrada se asignan automáticamente al confirmar el registro con la hora de Colombia.
+                La fecha y hora de entrada se asignan automaticamente al confirmar el registro con la hora de Colombia.
             </p>
         </div>
 
@@ -247,3 +247,4 @@
 
 </div>
 {% endblock %}
+

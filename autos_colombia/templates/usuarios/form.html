@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if modo == 'crear' %}Registrar Usuario{% else %}Modificar Usuario: {{ usuario.nombre_usuario }}{% endif %} · Autos Colombia
+{% endblock %}
+
+{% block header_title %}
+    {% if modo == 'crear' %}Registrar Usuario{% else %}Modificar Usuario{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="user-form-page" style="max-width: 800px; margin: 0 auto;">
+
+    <!-- Botón Volver y Encabezado -->
+    <div style="margin-bottom: 20px;">
+        <a href="{{ url_for('usuarios.listar') }}" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; color: var(--primary-blue); text-decoration: none; margin-bottom: 12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span>Volver al listado de usuarios</span>
+        </a>
+        <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--text-main);">
+            {% if modo == 'crear' %}
+                Registrar Nuevo Usuario en Autos Colombia
+            {% else %}
+                Modificar Datos de Cuenta: {{ usuario.nombres }} {{ usuario.apellidos }}
+            {% endif %}
+        </h2>
+        <p style="font-size: 0.84rem; color: var(--text-muted);">
+            {% if modo == 'crear' %}
+                Completa los datos obligatorios para crear una cuenta con rol de Administrador o Empleado.
+            {% else %}
+                Actualiza la información personal, credenciales de acceso o permisos de rol del usuario.
+            {% endif %}
+        </p>
+    </div>
+
+    <!-- Tarjeta del Formulario -->
+    <div style="background: #ffffff; border-radius: 14px; border: 1px solid var(--border-color); padding: 28px 32px; box-shadow: var(--shadow-card);">
+        <form method="POST" autocomplete="off">
+
+            <!-- Sección 1: Datos Personales -->
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background: var(--primary-blue); border-radius: 2px;"></span>
+                    Información Personal
+                </h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="nombres" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Nombres <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nombres" 
+                            name="nombres" 
+                            value="{{ usuario.nombres|default('') }}" 
+                            class="form-input" 
+                            placeholder="Ej: Carlos Andrés"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="apellidos" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Apellidos <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="apellidos" 
+                            name="apellidos" 
+                            value="{{ usuario.apellidos|default('') }}" 
+                            class="form-input" 
+                            placeholder="Ej: Restrepo Gómez"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;"
+                        >
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                    <div class="form-group">
+                        <label for="identificacion" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Número de Identificación (Cédula) <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="identificacion" 
+                            name="identificacion" 
+                            value="{{ usuario.identificacion|default('') }}" 
+                            class="form-input" 
+                            placeholder="Ej: 1020304050"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;"
+                        >
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">Debe ser único en el sistema.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="correo" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Correo Electrónico <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input 
+                            type="email" 
+                            id="correo" 
+                            name="correo" 
+                            value="{{ usuario.correo|default('') }}" 
+                            class="form-input" 
+                            placeholder="Ej: usuario@autoscolombia.com"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;"
+                        >
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">Para notificaciones y acceso flexible.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Credenciales de Acceso -->
+            <div style="margin-bottom: 24px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background: #8b5cf6; border-radius: 2px;"></span>
+                    Credenciales de Acceso
+                </h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label for="nombre_usuario" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Nombre de Usuario (Username) <span style="color: #ef4444;">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nombre_usuario" 
+                            name="nombre_usuario" 
+                            value="{{ usuario.nombre_usuario|default('') }}" 
+                            class="form-input" 
+                            placeholder="Ej: crestrepo"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;"
+                        >
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">Mínimo 3 caracteres alfanuméricos.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Contraseña {% if modo == 'crear' %}<span style="color: #ef4444;">*</span>{% endif %}
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-input" 
+                            placeholder="{% if modo == 'crear' %}Mínimo 6 caracteres{% else %}Dejar en blanco para no cambiar{% endif %}"
+                            {% if modo == 'crear' %}required{% endif %}
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem;"
+                        >
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">
+                            {% if modo == 'crear' %}
+                                Se almacenará mediante hash criptográfico Werkzeug (scrypt / pbkdf2).
+                            {% else %}
+                                Solo escribe una nueva contraseña si deseas actualizarla.
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 3: Permisos y Rol (RF-08, RF-07) -->
+            <div style="margin-bottom: 28px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 4px; height: 16px; background: #10b981; border-radius: 2px;"></span>
+                    Rol y Estado de la Cuenta
+                </h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <!-- Selección de Rol -->
+                    <div class="form-group">
+                        <label for="rol" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Rol en el Sistema <span style="color: #ef4444;">*</span>
+                        </label>
+                        <select 
+                            id="rol" 
+                            name="rol" 
+                            class="form-select"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: #ffffff;"
+                        >
+                            <option value="EMPLEADO" {% if usuario.rol == 'EMPLEADO' %}selected{% endif %}>
+                                Empleado (Operación diaria del parqueadero)
+                            </option>
+                            <option value="ADMINISTRADOR" {% if usuario.rol == 'ADMINISTRADOR' %}selected{% endif %}>
+                                Administrador (Control total del sistema)
+                            </option>
+                        </select>
+                        <div style="margin-top: 8px; font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+                            <strong>Empleado:</strong> Entradas, salidas en 2 pasos, consultas y disponibilidad.<br>
+                            <strong>Administrador:</strong> Además gestiona usuarios, celdas y configuración.
+                        </div>
+                    </div>
+
+                    <!-- Selección de Estado -->
+                    <div class="form-group">
+                        <label for="estado" style="display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+                            Estado de la Cuenta <span style="color: #ef4444;">*</span>
+                        </label>
+                        <select 
+                            id="estado" 
+                            name="estado" 
+                            class="form-select"
+                            required
+                            style="width: 100%; height: 42px; padding: 0 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.9rem; background: #ffffff;"
+                        >
+                            <option value="ACTIVO" {% if usuario.estado == 'ACTIVO' %}selected{% endif %}>
+                                Activo (Puede iniciar sesión)
+                            </option>
+                            <option value="INACTIVO" {% if usuario.estado == 'INACTIVO' %}selected{% endif %}>
+                                Inactivo (Acceso bloqueado)
+                            </option>
+                        </select>
+                        <div style="margin-top: 8px; font-size: 0.74rem; color: var(--text-muted); line-height: 1.4;">
+                            Las cuentas inactivas no pueden iniciar sesión en el sistema pero conservan todo su historial.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <a href="{{ url_for('usuarios.listar') }}" class="btn" style="height: 42px; padding: 0 20px; background: #ffffff; color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" style="height: 42px; padding: 0 24px; background: var(--primary-blue); color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    <span>{% if modo == 'crear' %}Guardar Usuario{% else %}Guardar Cambios{% endif %}</span>
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}

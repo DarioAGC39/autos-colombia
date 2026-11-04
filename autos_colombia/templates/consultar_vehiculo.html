@@ -1,17 +1,17 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}Consultar Vehículo - Autos Colombia{% endblock %}
-{% block header_title %}Consultar vehículo{% endblock %}
+{% block title %}Consultar Vehiculo - Autos Colombia{% endblock %}
+{% block header_title %}Consultar vehiculo{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h2 class="page-title">Consultar vehículo</h2>
-    <p class="page-description">Consulta los datos del vehículo y su estado actual en el parqueadero.</p>
+    <h2 class="page-title">Consultar vehiculo</h2>
+    <p class="page-description">Consulta los datos del vehiculo y su estado actual en el parqueadero.</p>
 </div>
 
-<!-- BARRA DE BÚSQUEDA POR PLACA -->
+<!-- BARRA DE BšSQUEDA POR PLACA -->
 <div class="search-card">
-    <form action="{{ url_for('consultar_vehiculo') }}" method="GET" class="search-form">
+    <form action="{{ url_for('consultas.consultar_vehiculo') }}" method="GET" class="search-form">
         <div class="search-input-group">
             <label for="placa-search" class="search-label">Buscar por placa</label>
             <div class="search-row">
@@ -36,11 +36,11 @@
     </form>
 </div>
 
-<!-- RESULTADOS DEL VEHÍCULO -->
+<!-- RESULTADOS DEL VEHCULO -->
 {% if vehiculo %}
 <div class="vehicle-result-card">
 
-    <!-- Encabezado de la ficha del vehículo -->
+    <!-- Encabezado de la ficha del vehiculo -->
     <div class="vehicle-card-header">
         <div class="vehicle-badge-profile">
             <div class="vehicle-icon-box">
@@ -70,10 +70,10 @@
         </div>
     </div>
 
-    <!-- Grilla de características técnicas -->
+    <!-- Grilla de caracteristicas tecnicas -->
     <div class="vehicle-details-grid">
         <div class="detail-column">
-            <span class="detail-label">Tipo de vehículo</span>
+            <span class="detail-label">Tipo de vehiculo</span>
             <span class="detail-value">{{ vehiculo.tipo }}</span>
         </div>
         <div class="detail-column">
@@ -102,7 +102,7 @@
 
         <div class="movement-table-summary">
             <div class="summary-col">
-                <span class="summary-label">Placa del vehículo</span>
+                <span class="summary-label">Placa del vehiculo</span>
                 <span class="summary-value">{{ movimiento_activo.placa }}</span>
             </div>
             <div class="summary-col">
@@ -111,12 +111,12 @@
             </div>
             <div class="summary-col">
                 <span class="summary-label">Fecha y hora de salida</span>
-                <span class="summary-value text-muted">—</span>
+                <span class="summary-value text-muted">-</span>
             </div>
         </div>
 
         <p class="movement-info-caption">
-            El vehículo permanece en el parqueadero. Aún no se ha registrado su salida.
+            El vehiculo permanece en el parqueadero. Aun no se ha registrado su salida.
         </p>
 
         <div class="mt-6 flex-end">
@@ -133,14 +133,14 @@
         </div>
         <h4 class="empty-state-title">No existe un movimiento activo</h4>
         <p class="empty-state-text">
-            El vehículo <strong>{{ vehiculo.placa }}</strong> se encuentra fuera del parqueadero.
+            El vehiculo <strong>{{ vehiculo.placa }}</strong> se encuentra fuera del parqueadero.
             Puedes consultar sus entradas y salidas anteriores en Historial de movimientos.
         </p>
         <div class="mt-4 flex-actions-center">
             <a href="{{ url_for('historial', placa=vehiculo.placa) }}" class="btn btn-secondary mr-3">
                 Ver historial de movimientos
             </a>
-            <a href="{{ url_for('registrar_entrada') }}" class="btn btn-primary">
+            <a href="{{ url_for('entradas.registrar_entrada') }}" class="btn btn-primary">
                 Registrar nueva entrada
             </a>
         </div>
@@ -151,3 +151,4 @@
 {% endif %}
 
 {% endblock %}
+

@@ -30,7 +30,7 @@ class ParqueaderoService:
     TARIFA_MENSUAL_MOTO = 100000   # $100.000 COP / mes
 
     # Tipos permitidos
-    TIPOS_PERMITIDOS = ['CARRO', 'MOTO']
+    TIPOS_PERMITIDOS = ['Carro', 'Moto']
 
     @classmethod
     def validar_formato_placa(cls, placa):
@@ -52,9 +52,9 @@ class ParqueaderoService:
             return None
         t = tipo_raw.strip().lower()
         if 'moto' in t:
-            return 'MOTO'
+            return 'Moto'
         if 'carro' in t or 'auto' in t:
-            return 'CARRO'
+            return 'Carro'
         return None
 
     @classmethod
@@ -188,7 +188,7 @@ class ParqueaderoService:
                 raise ReglaNegocioException(f"El vehículo {placa_limpia} no tiene un movimiento activo (ya está fuera del parqueadero).")
 
             # Finalizar movimiento
-            obs = f"Salida confirmada. Celda {mov.get('codigo_celda', 'N/A')} liberada."
+            obs = f"Salida confirmada. Celda {mov.get('celda', 'N/A')} liberada."
             MovimientoDAO.registrar_salida(cursor, mov['id_movimiento'], obs)
 
             resumen = MovimientoDAO.obtener_por_id(cursor, mov['id_movimiento'])
@@ -267,7 +267,7 @@ class ParqueaderoService:
             activos = MovimientoDAO.listar_movimientos_activos_con_vehiculo(cursor)
             mapa_activos = {}
             for act in activos:
-                c = act.get('codigo_celda')
+                c = act.get('celda')
                 if c:
                     if isinstance(act.get('fecha_hora_entrada'), datetime):
                         act['fecha_hora_entrada'] = act['fecha_hora_entrada'].strftime('%Y-%m-%d %H:%M:%S')

@@ -10,16 +10,18 @@ Arquitectura: 3 Capas (Controladores/Blueprints -> Servicios -> DAO)
 Guía académica para el estudiante y evaluador:
 Este archivo actúa como el punto de entrada de la aplicación (Application Factory).
 Cumple estrictamente con el principio de Separación de Responsabilidades:
-1. Base de Datos:    database.py (gestión de conexiones seguras y transacciones)
-2. Capa DAO:        dao/ (aislamiento de sentencias SQL para Vehículo, Movimiento y Celdas)
-3. Capa de Negocio: services/ (validaciones, asignación de 80 celdas, tarifas de mensualidad)
-4. Controladores:   routes/ (Blueprints para Entradas, Salidas en 2 fases, Consultas y Panel)
+  1. Base de Datos:    database.py (gestión de conexiones seguras y transacciones)
+  2. Capa DAO:        dao/ (aislamiento de sentencias SQL para Vehículo, Movimiento y Celdas)
+  3. Capa de Negocio: services/ (validaciones, asignación de 80 celdas, tarifas de mensualidad)
+  4. Controladores:   routes/ (Blueprints para Entradas, Salidas en 2 fases, Consultas y Panel)
 """
 
 from flask import Flask, url_for
 from config import Config
 
 # Importación de Blueprints modulares
+from routes.auth import auth_bp
+from routes.usuarios import usuarios_bp
 from routes.dashboard import dashboard_bp
 from routes.entradas import entradas_bp
 from routes.salidas import salidas_bp
@@ -36,7 +38,22 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Inyector de contexto global para plantillas Jinja2
+    @app.context_processor
+    def inject_user_context():
+        from flask import session
+        return {
+            'usuario_autenticado': bool(session.get('usuario_id')),
+            'sesion_usuario_id': session.get('usuario_id'),
+            'sesion_nombre': session.get('nombre_completo', 'Usuario'),
+            'sesion_username': session.get('nombre_usuario', ''),
+            'sesion_rol': session.get('rol', 'EMPLEADO'),
+            'es_admin': session.get('rol') == 'ADMINISTRADOR'
+        }
+
     # Registro de módulos (Blueprints)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(usuarios_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(entradas_bp)
     app.register_blueprint(salidas_bp)
@@ -49,6 +66,9 @@ def create_app():
     with app.app_context():
         rutas_compatibilidad = {
             'index': 'dashboard.index',
+            'login': 'auth.login',
+            'logout': 'auth.logout',
+            'usuarios': 'usuarios.listar',
             'registrar_entrada': 'entradas.registrar_entrada',
             'registrar_salida': 'salidas.salidas_bp.registrar_salida' if 'salidas.salidas_bp.registrar_salida' in app.view_functions else 'salidas.registrar_salida',
             'consultar_vehiculo': 'consultas.consultar_vehiculo',
@@ -58,20 +78,6 @@ def create_app():
         for alias, original in rutas_compatibilidad.items():
             if original in app.view_functions and alias not in app.view_functions:
                 app.view_functions[alias] = app.view_functions[original]
-                # Registrar también las reglas de URL del endpoint original
-                # para que url_for(alias) funcione en las plantillas.
-                for rule in list(app.url_map.iter_rules()):
-                    if rule.endpoint == original:
-                        app.add_url_rule(
-                            rule.rule,
-                            endpoint=alias,
-                            view_func=app.view_functions[original],
-                            methods=sorted(rule.methods),
-                            defaults=rule.defaults,
-                            host=rule.host,
-                            subdomain=rule.subdomain,
-                            provide_automatic_options=rule.provide_automatic_options,
-                        )
 
     return app
 

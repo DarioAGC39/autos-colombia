@@ -12,11 +12,13 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, flash
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService, ReglaNegocioException
+from routes.helpers import login_required
 
 salidas_bp = Blueprint('salidas', __name__)
 
 
 @salidas_bp.route('/registrar-salida', methods=['GET', 'POST'], endpoint='registrar_salida')
+@login_required
 def registrar_salida():
     """
     Controlador de salida con flujo en dos fases estrictas:
@@ -43,7 +45,7 @@ def registrar_salida():
             fecha_salida = resumen_salida['fecha_hora_salida']
             fecha_str = fecha_salida.strftime('%d de %B de %Y a las %H:%M') if isinstance(fecha_salida, datetime) else str(fecha_salida)
 
-            flash(f"Se registró la salida de {placa_busqueda} el {fecha_str}. La celda {resumen_salida.get('codigo_celda', '')} ha sido liberada.", "success")
+            flash(f"Se registró la salida de {placa_busqueda} el {fecha_str}. La celda {resumen_salida.get('celda', '')} ha sido liberada.", "success")
             return render_template(
                 'registrar_salida.html',
                 placa_busqueda=placa_busqueda,

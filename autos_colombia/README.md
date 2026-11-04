@@ -157,3 +157,40 @@ Para responder a la pregunta del jurado docente sobre por qué existen dos versi
    - **Arquitectura:** Estructurada en capas desacopladas (Controladores -> Servicios -> DAOs).
 
 Ambas versiones comparten exactamente las mismas reglas de negocio: mensualidad ($250.000 carro / $100.000 moto), capacidad de 80 celdas, validación de placas colombianas y flujo de salida en 2 pasos.
+
+---
+
+## 👥 7. Iteración 2: Módulo de Gestión de Usuarios y Control de Acceso (RBAC)
+
+Esta iteración incorpora la administración integral de identidades y accesos del sistema:
+
+### 7.1 Roles Implementados (Solo 2 roles):
+1. **Administrador (`ADMINISTRADOR`):**
+   - Iniciar y cerrar sesión.
+   - Registrar nuevos usuarios (Administradores o Empleados).
+   - Consultar el listado completo y buscar usuarios por nombre, identificación o username.
+   - Modificar datos personales y credenciales.
+   - Activar y desactivar cuentas (sin borrado destructivo).
+   - Asignar o cambiar roles.
+   - Acceso total a la gestión del parqueadero y celdas.
+2. **Empleado (`EMPLEADO`):**
+   - Iniciar y cerrar sesión.
+   - Operaciones diarias: registro de entradas, búsqueda y salidas confirmadas en 2 pasos.
+   - Consultar el panel de disponibilidad de las 80 celdas y el historial.
+   - **Restricción estricta:** No puede registrar usuarios, no puede modificar cuentas, no puede desactivar ni asignar roles, y las rutas administrativas están bloqueadas en backend (`@admin_required`).
+
+### 7.2 Cuentas de Demostración Académica
+| Rol | Nombre de Usuario | Correo Electrónico | Contraseña | Estado |
+|---|---|---|---|---|
+| **Administrador** | `admin` | `admin@autoscolombia.com` | `Admin123*` | `ACTIVO` |
+| **Empleado** | `empleado` | `empleado@autoscolombia.com` | `Admin123*` | `ACTIVO` |
+
+*Nota sobre seguridad:* Las contraseñas se almacenan mediante hash criptográfico generado con `werkzeug.security` (`scrypt` / `pbkdf2:sha256`). **Nunca se almacenan contraseñas en texto plano.**
+
+### 7.3 Migración SQL
+Para actualizar una base de datos existente de la Iteración 1 a la Iteración 2:
+```bash
+mysql -u root -p autos_colombia < migration_usuarios.sql
+```
+O desde MySQL Workbench / phpMyAdmin, abre y ejecuta el script `migration_usuarios.sql`.
+
