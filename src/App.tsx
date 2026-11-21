@@ -25,11 +25,22 @@ import {
   Users,
   Shield,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  CreditCard
 } from 'lucide-react';
 import PanelDisponibilidad from './components/PanelDisponibilidad';
 import GestionUsuarios, { Usuario } from './components/GestionUsuarios';
 import LoginScreen from './components/LoginScreen';
+import GestionPagos, {
+  Propietario,
+  PagoMensual,
+  NotificacionVencimiento,
+  hoyISO,
+  sumarDiasISO,
+  sumarUnMesISO,
+  restarUnMesISO,
+  construirMensajeRecordatorio
+} from './components/GestionPagos';
 
 // Tipos de datos para el sistema
 interface Vehiculo {
@@ -38,6 +49,7 @@ interface Vehiculo {
   color: string;
   marca: string;
   modelo: string;
+  id_propietario?: number | null;
 }
 
 interface Movimiento {
@@ -48,6 +60,12 @@ interface Movimiento {
   fecha_hora_salida: string | null;
   estado: 'ACTIVO' | 'FINALIZADO';
   observaciones: string;
+  id_usuario_entrada?: number | null;
+  usuario_entrada_nombre?: string | null;
+  usuario_entrada_rol?: string | null;
+  id_usuario_salida?: number | null;
+  usuario_salida_nombre?: string | null;
+  usuario_salida_rol?: string | null;
 }
 
 // Usuarios de prueba iniciales (Iteración 2: Gestión de Usuarios)
@@ -78,11 +96,143 @@ const USUARIOS_INICIALES: Usuario[] = [
 
 // Datos de prueba iniciales (Conforme a los mockups de Figma para KLM482 en celda C-14)
 const VEHICULOS_INICIALES: Record<string, Vehiculo> = {
-  'KLM482': { placa: 'KLM482', tipo: 'Carro', color: 'Gris plata', marca: 'Renault', modelo: 'Logan 2022' },
-  'ABC123': { placa: 'ABC123', tipo: 'Carro', color: 'Rojo escarlata', marca: 'Mazda', modelo: 'Mazda 3 2021' },
-  'XYZ789': { placa: 'XYZ789', tipo: 'Carro', color: 'Blanco', marca: 'Toyota', modelo: 'Prado 2023' },
-  'MOT101': { placa: 'MOT101', tipo: 'Moto', color: 'Negro', marca: 'Yamaha', modelo: 'FZ 250 2022' },
+  'KLM482': { placa: 'KLM482', tipo: 'Carro', color: 'Gris plata', marca: 'Renault', modelo: 'Logan 2022', id_propietario: 1 },
+  'ABC123': { placa: 'ABC123', tipo: 'Carro', color: 'Rojo escarlata', marca: 'Mazda', modelo: 'Mazda 3 2021', id_propietario: 2 },
+  'XYZ789': { placa: 'XYZ789', tipo: 'Carro', color: 'Blanco', marca: 'Toyota', modelo: 'Prado 2023', id_propietario: 3 },
+  'MOT101': { placa: 'MOT101', tipo: 'Moto', color: 'Negro', marca: 'Yamaha', modelo: 'FZ 250 2022', id_propietario: 1 },
 };
+
+// Datos iniciales Iteración 3: Propietarios (RN07) y Pagos cubriendo los 3 estados de vencimiento
+const PROPIETARIOS_INICIALES: Propietario[] = [
+  {
+    id_propietario: 1,
+    nombre_completo: 'Andrés Felipe Martínez',
+    identificacion: '1015423890',
+    celular: '3104567890',
+    correo: 'andres.martinez@correo.com',
+    fecha_registro: hoyISO()
+  },
+  {
+    id_propietario: 2,
+    nombre_completo: 'Laura Sofía Benítez',
+    identificacion: '1032498123',
+    celular: '3159876543',
+    correo: 'laura.benitez@correo.com',
+    fecha_registro: hoyISO()
+  },
+  {
+    id_propietario: 3,
+    nombre_completo: 'Juan Pablo Ochoa',
+    identificacion: '79852147',
+    celular: '3007418529',
+    correo: 'juan.ochoa@correo.com',
+    fecha_registro: hoyISO()
+  }
+];
+
+function crearPagosIniciales(): PagoMensual[] {
+  const hoy = hoyISO();
+  const venceEn3Dias = sumarDiasISO(hoy, 3);
+  const inicioAbc = restarUnMesISO(venceEn3Dias);
+  const vencioHace4Dias = sumarDiasISO(hoy, -4);
+  const inicioXyz = restarUnMesISO(vencioHace4Dias);
+  const inicioMoto = sumarDiasISO(hoy, -5);
+
+  return [
+    {
+      id_pago: 1,
+      numero_comprobante: 'AC-2026-00001',
+      placa: 'KLM482',
+      id_propietario: 1,
+      propietario_nombre: 'Andrés Felipe Martínez',
+      propietario_identificacion: '1015423890',
+      propietario_celular: '3104567890',
+      propietario_correo: 'andres.martinez@correo.com',
+      concepto: 'Mensualidad de parqueadero',
+      tipo_vehiculo_tarifa: 'Carro',
+      valor_mensualidad: 250000,
+      valor_mora: 0,
+      valor_pagado: 250000,
+      fecha_pago: hoy,
+      fecha_inicio_periodo: hoy,
+      fecha_vencimiento: sumarUnMesISO(hoy),
+      metodo_pago: 'Transferencia',
+      estado_pago: 'CONFIRMADO',
+      observaciones: 'Mensualidad al día',
+      usuario_registro_nombre: 'Carlos Restrepo',
+      usuario_registro_rol: 'ADMINISTRADOR'
+    },
+    {
+      id_pago: 2,
+      numero_comprobante: 'AC-2026-00002',
+      placa: 'ABC123',
+      id_propietario: 2,
+      propietario_nombre: 'Laura Sofía Benítez',
+      propietario_identificacion: '1032498123',
+      propietario_celular: '3159876543',
+      propietario_correo: 'laura.benitez@correo.com',
+      concepto: 'Mensualidad de parqueadero',
+      tipo_vehiculo_tarifa: 'Carro',
+      valor_mensualidad: 250000,
+      valor_mora: 0,
+      valor_pagado: 250000,
+      fecha_pago: inicioAbc,
+      fecha_inicio_periodo: inicioAbc,
+      fecha_vencimiento: venceEn3Dias,
+      metodo_pago: 'Efectivo',
+      estado_pago: 'CONFIRMADO',
+      observaciones: 'Mensualidad próxima a vencer (genera alerta a 5 días)',
+      usuario_registro_nombre: 'Dario Guerrero',
+      usuario_registro_rol: 'EMPLEADO'
+    },
+    {
+      id_pago: 3,
+      numero_comprobante: 'AC-2026-00003',
+      placa: 'XYZ789',
+      id_propietario: 3,
+      propietario_nombre: 'Juan Pablo Ochoa',
+      propietario_identificacion: '79852147',
+      propietario_celular: '3007418529',
+      propietario_correo: 'juan.ochoa@correo.com',
+      concepto: 'Mensualidad de parqueadero',
+      tipo_vehiculo_tarifa: 'Carro',
+      valor_mensualidad: 250000,
+      valor_mora: 0,
+      valor_pagado: 250000,
+      fecha_pago: inicioXyz,
+      fecha_inicio_periodo: inicioXyz,
+      fecha_vencimiento: vencioHace4Dias,
+      metodo_pago: 'Tarjeta Débito/Crédito',
+      estado_pago: 'CONFIRMADO',
+      observaciones: 'Mensualidad vencida para probar renovación sin mora (RN02/RN03)',
+      usuario_registro_nombre: 'Carlos Restrepo',
+      usuario_registro_rol: 'ADMINISTRADOR'
+    },
+    {
+      id_pago: 4,
+      numero_comprobante: 'AC-2026-00004',
+      placa: 'MOT101',
+      id_propietario: 1,
+      propietario_nombre: 'Andrés Felipe Martínez',
+      propietario_identificacion: '1015423890',
+      propietario_celular: '3104567890',
+      propietario_correo: 'andres.martinez@correo.com',
+      concepto: 'Mensualidad de parqueadero',
+      tipo_vehiculo_tarifa: 'Moto',
+      valor_mensualidad: 100000,
+      valor_mora: 0,
+      valor_pagado: 100000,
+      fecha_pago: inicioMoto,
+      fecha_inicio_periodo: inicioMoto,
+      fecha_vencimiento: sumarUnMesISO(inicioMoto),
+      metodo_pago: 'Efectivo',
+      estado_pago: 'CONFIRMADO',
+      observaciones: 'Segundo vehículo del propietario Andrés Felipe Martínez (RN07)',
+      usuario_registro_nombre: 'Dario Guerrero',
+      usuario_registro_rol: 'EMPLEADO'
+    }
+  ];
+}
 
 const MOVIMIENTOS_INICIALES: Movimiento[] = [
   { id: 5, placa: 'KLM482', celda: 'C-14', fecha_hora_entrada: '23 oct 2026 · 08:32', fecha_hora_salida: null, estado: 'ACTIVO', observaciones: 'Vehículo actualmente en el parqueadero' },
@@ -109,19 +259,47 @@ export default function App() {
 
   // Vista activa del sistema administrativo
   const [seccionActiva, setSeccionActiva] = useState<
-    'inicio' | 'registrar_entrada' | 'registrar_salida' | 'consultar_vehiculo' | 'historial' | 'panel_disponibilidad' | 'gestion_usuarios'
+    'inicio' | 'registrar_entrada' | 'registrar_salida' | 'consultar_vehiculo' | 'historial' | 'panel_disponibilidad' | 'gestion_usuarios' | 'gestion_pagos'
   >('inicio');
 
   // Estado del Parqueadero (Persistente en LocalStorage)
   const [vehiculos, setVehiculos] = useState<Record<string, Vehiculo>>(() => {
     const saved = localStorage.getItem('autos_colombia_vehiculos');
-    return saved ? JSON.parse(saved) : VEHICULOS_INICIALES;
+    if (saved) {
+      const parsed: Record<string, Vehiculo> = JSON.parse(saved);
+      // Asegurar vínculo inicial si se actualiza desde Iteración 2 sin perder vehículos guardados
+      Object.keys(VEHICULOS_INICIALES).forEach(pl => {
+        if (parsed[pl] && parsed[pl].id_propietario === undefined) {
+          parsed[pl] = { ...parsed[pl], id_propietario: VEHICULOS_INICIALES[pl].id_propietario };
+        }
+      });
+      return parsed;
+    }
+    return VEHICULOS_INICIALES;
   });
 
   const [movimientos, setMovimientos] = useState<Movimiento[]>(() => {
     const saved = localStorage.getItem('autos_colombia_movimientos');
     return saved ? JSON.parse(saved) : MOVIMIENTOS_INICIALES;
   });
+
+  // Estado de Gestión de Pagos (Iteración 3)
+  const [propietarios, setPropietarios] = useState<Propietario[]>(() => {
+    const saved = localStorage.getItem('autos_colombia_propietarios');
+    return saved ? JSON.parse(saved) : PROPIETARIOS_INICIALES;
+  });
+
+  const [pagos, setPagos] = useState<PagoMensual[]>(() => {
+    const saved = localStorage.getItem('autos_colombia_pagos');
+    return saved ? JSON.parse(saved) : crearPagosIniciales();
+  });
+
+  const [notificaciones, setNotificaciones] = useState<NotificacionVencimiento[]>(() => {
+    const saved = localStorage.getItem('autos_colombia_notificaciones');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [comprobanteActivo, setComprobanteActivo] = useState<PagoMensual | null>(null);
 
   // Guardar en localStorage
   useEffect(() => {
@@ -135,6 +313,18 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('autos_colombia_usuarios', JSON.stringify(usuarios));
   }, [usuarios]);
+
+  useEffect(() => {
+    localStorage.setItem('autos_colombia_propietarios', JSON.stringify(propietarios));
+  }, [propietarios]);
+
+  useEffect(() => {
+    localStorage.setItem('autos_colombia_pagos', JSON.stringify(pagos));
+  }, [pagos]);
+
+  useEffect(() => {
+    localStorage.setItem('autos_colombia_notificaciones', JSON.stringify(notificaciones));
+  }, [notificaciones]);
 
   useEffect(() => {
     if (usuarioSesion) {
@@ -324,6 +514,250 @@ export default function App() {
     });
   };
 
+  // ==============================================================
+  // LÓGICA DE NEGOCIO ITERACIÓN 3: GESTIÓN DE PAGOS (RN01 - RN07)
+  // ==============================================================
+  const sincronizarNotificacionesVencimiento = (listaPagos = pagos, listaProps = propietarios, listaVehs = vehiculos) => {
+    const hoy = hoyISO();
+    const [hy, hm, hd] = hoy.split('-').map(Number);
+    const msHoy = Date.UTC(hy, hm - 1, hd);
+
+    let generadas = 0;
+    const nuevasNotifs: NotificacionVencimiento[] = [...notificaciones];
+    let nextId = Math.max(...nuevasNotifs.map(n => n.id_notificacion), 0) + 1;
+
+    Object.values(listaVehs).forEach(v => {
+      if (!v.id_propietario) return;
+      const prop = listaProps.find(p => p.id_propietario === v.id_propietario);
+      if (!prop) return;
+
+      const ultimoPago = listaPagos
+        .filter(p => p.placa === v.placa && p.estado_pago === 'CONFIRMADO')
+        .sort((a, b) => (a.fecha_vencimiento < b.fecha_vencimiento ? 1 : -1))[0];
+
+      if (!ultimoPago) return;
+
+      const [vy, vm, vd] = ultimoPago.fecha_vencimiento.split('-').map(Number);
+      const msVenc = Date.UTC(vy, vm - 1, vd);
+      const diff = Math.round((msVenc - msHoy) / (1000 * 60 * 60 * 24));
+
+      if (diff >= 0 && diff <= 5) {
+        const yaExiste = nuevasNotifs.some(
+          n => n.placa === v.placa && n.fecha_vencimiento_ref === ultimoPago.fecha_vencimiento
+        );
+        if (!yaExiste) {
+          nuevasNotifs.unshift({
+            id_notificacion: nextId++,
+            placa: v.placa,
+            id_propietario: prop.id_propietario,
+            propietario_nombre: prop.nombre_completo,
+            propietario_celular: prop.celular,
+            propietario_correo: prop.correo,
+            id_pago: ultimoPago.id_pago,
+            tipo_notificacion: 'VENCIMIENTO_PROXIMO',
+            mensaje: construirMensajeRecordatorio(v.placa, ultimoPago.fecha_vencimiento),
+            fecha_vencimiento_ref: ultimoPago.fecha_vencimiento,
+            estado_envio: 'GENERADA_PENDIENTE_CANAL',
+            detalle_canal: 'Generada automáticamente (5 días antes). Canal externo SMTP/SMS no configurado en navegador.',
+            fecha_generacion: hoy
+          });
+          generadas++;
+        }
+      }
+    });
+
+    if (generadas > 0) {
+      setNotificaciones(nuevasNotifs);
+    }
+    return generadas;
+  };
+
+  useEffect(() => {
+    sincronizarNotificacionesVencimiento();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagos, vehiculos, propietarios]);
+
+  const handleGuardarPropietario = (datos: {
+    nombre_completo: string;
+    identificacion: string;
+    celular: string;
+    correo: string;
+    placa_vincular?: string;
+  }) => {
+    const ced = datos.identificacion.trim();
+    const nombre = datos.nombre_completo.trim();
+    const cel = datos.celular.trim();
+    const correo = datos.correo.trim().toLowerCase();
+    const placa = (datos.placa_vincular || '').trim().toUpperCase();
+
+    if (nombre.length < 3 || ced.length < 5 || cel.length < 7 || !correo.includes('@')) {
+      return { success: false, error: 'Verifica que cédula, nombre completo, celular y correo sean válidos.' };
+    }
+
+    if (placa && !vehiculos[placa]) {
+      return { success: false, error: `El vehículo ${placa} no existe aún. Regístralo primero desde "Registrar entrada".` };
+    }
+
+    const existente = propietarios.find(p => p.identificacion === ced);
+    let idProp: number;
+    let accionMsg = '';
+
+    if (existente) {
+      idProp = existente.id_propietario;
+      setPropietarios(prev =>
+        prev.map(p =>
+          p.id_propietario === idProp
+            ? { ...p, nombre_completo: nombre, celular: cel, correo }
+            : p
+        )
+      );
+      accionMsg = `Propietario existente (${ced}) actualizado sin duplicar registros.`;
+    } else {
+      idProp = Math.max(...propietarios.map(p => p.id_propietario), 0) + 1;
+      const nuevo: Propietario = {
+        id_propietario: idProp,
+        nombre_completo: nombre,
+        identificacion: ced,
+        celular: cel,
+        correo,
+        fecha_registro: hoyISO()
+      };
+      setPropietarios(prev => [nuevo, ...prev]);
+      accionMsg = `Propietario ${nombre} (${ced}) registrado exitosamente.`;
+    }
+
+    if (placa) {
+      setVehiculos(prev => ({
+        ...prev,
+        [placa]: { ...prev[placa], id_propietario: idProp }
+      }));
+      accionMsg += ` Vehículo ${placa} asociado.`;
+    }
+
+    return { success: true, mensaje: accionMsg };
+  };
+
+  const handleConfirmarPago = (datos: {
+    placa: string;
+    fecha_pago: string;
+    metodo_pago: string;
+    observaciones: string;
+    nombre_propietario: string;
+    identificacion_propietario: string;
+    celular_propietario: string;
+    correo_propietario: string;
+  }) => {
+    const placa = datos.placa.trim().toUpperCase();
+    const veh = vehiculos[placa];
+    if (!veh) {
+      return { success: false, error: `El vehículo ${placa} no se encuentra registrado.` };
+    }
+
+    const ced = datos.identificacion_propietario.trim();
+    const nombre = datos.nombre_propietario.trim();
+    const cel = datos.celular_propietario.trim();
+    const correo = datos.correo_propietario.trim().toLowerCase();
+
+    if (nombre.length < 3 || ced.length < 5 || cel.length < 7 || !correo.includes('@')) {
+      return { success: false, error: 'Completa correctamente los datos obligatorios del propietario (RN07).' };
+    }
+
+    const fechaPago = datos.fecha_pago || hoyISO();
+    const fechaVenc = sumarUnMesISO(fechaPago);
+    if (!fechaVenc || fechaVenc <= fechaPago) {
+      return { success: false, error: 'Inconsistencia en las fechas del periodo mensual.' };
+    }
+
+    // Evitar pagos duplicados para la misma placa en la misma fecha
+    const dup = pagos.find(p => p.placa === placa && p.fecha_pago === fechaPago && p.estado_pago === 'CONFIRMADO');
+    if (dup) {
+      return {
+        success: false,
+        error: `Ya existe un pago confirmado para ${placa} en la fecha ${fechaPago} (${dup.numero_comprobante}). No se permiten pagos duplicados.`
+      };
+    }
+
+    // Resolver o crear propietario sin duplicar cédula (RN07)
+    let idProp: number;
+    const propExistente = propietarios.find(p => p.identificacion === ced);
+    if (propExistente) {
+      idProp = propExistente.id_propietario;
+      setPropietarios(prev =>
+        prev.map(p =>
+          p.id_propietario === idProp
+            ? { ...p, nombre_completo: nombre, celular: cel, correo }
+            : p
+        )
+      );
+    } else {
+      idProp = Math.max(...propietarios.map(p => p.id_propietario), 0) + 1;
+      setPropietarios(prev => [
+        {
+          id_propietario: idProp,
+          nombre_completo: nombre,
+          identificacion: ced,
+          celular: cel,
+          correo,
+          fecha_registro: hoyISO()
+        },
+        ...prev
+      ]);
+    }
+
+    // Asociar vehículo al propietario
+    setVehiculos(prev => ({
+      ...prev,
+      [placa]: { ...prev[placa], id_propietario: idProp }
+    }));
+
+    const esMoto = veh.tipo.toLowerCase().includes('moto');
+    const tarifa = esMoto ? 100000 : 250000;
+    const nuevoIdPago = Math.max(...pagos.map(p => p.id_pago), 0) + 1;
+    const anio = fechaPago.slice(0, 4);
+    // RN04: el consecutivo es anual e independiente del id interno (coherente con el backend).
+    const ultimoConsecutivoAnio = pagos
+      .filter(p => p.numero_comprobante.startsWith(`AC-${anio}-`))
+      .reduce((max, p) => Math.max(max, parseInt(p.numero_comprobante.split('-').pop() || '0', 10) || 0), 0);
+    const numeroComprobante = `AC-${anio}-${String(ultimoConsecutivoAnio + 1).padStart(5, '0')}`;
+
+    const nuevoPago: PagoMensual = {
+      id_pago: nuevoIdPago,
+      numero_comprobante: numeroComprobante,
+      placa,
+      id_propietario: idProp,
+      propietario_nombre: nombre,
+      propietario_identificacion: ced,
+      propietario_celular: cel,
+      propietario_correo: correo,
+      concepto: 'Mensualidad de parqueadero',
+      tipo_vehiculo_tarifa: esMoto ? 'Moto' : 'Carro',
+      valor_mensualidad: tarifa,
+      valor_mora: 0,
+      valor_pagado: tarifa,
+      fecha_pago: fechaPago,
+      fecha_inicio_periodo: fechaPago,
+      fecha_vencimiento: fechaVenc,
+      metodo_pago: datos.metodo_pago || 'Efectivo',
+      estado_pago: 'CONFIRMADO',
+      observaciones: datos.observaciones.trim() || 'Renovación mensual sin recargos por mora ($0)',
+      usuario_registro_nombre: usuarioSesion ? `${usuarioSesion.nombres} ${usuarioSesion.apellidos}` : 'Operador',
+      usuario_registro_rol: usuarioSesion?.rol || 'EMPLEADO'
+    };
+
+    setPagos(prev => [nuevoPago, ...prev]);
+    return { success: true, comprobante: nuevoPago };
+  };
+
+  const handleMarcarNotificacionRevisada = (id_notificacion: number) => {
+    setNotificaciones(prev =>
+      prev.map(n =>
+        n.id_notificacion === id_notificacion
+          ? { ...n, estado_envio: 'REVISADA', detalle_canal: 'Revisada manualmente en el panel de control' }
+          : n
+      )
+    );
+  };
+
   // Reloj Colombia en tiempo real
   const [horaColombia, setHoraColombia] = useState<string>('23 de octubre de 2026 - 08:32 · Hora de Colombia');
 
@@ -374,10 +808,14 @@ export default function App() {
 
   // Función para reiniciar datos a los iniciales
   const reiniciarDatos = () => {
-    if (window.confirm('¿Deseas reiniciar los datos de prueba a su estado original (KLM482 precargado)?')) {
+    if (window.confirm('¿Deseas reiniciar todos los datos de prueba (vehículos, movimientos, propietarios, pagos y notificaciones)?')) {
       setVehiculos(VEHICULOS_INICIALES);
       setMovimientos(MOVIMIENTOS_INICIALES);
-      setAlertaGeneral({ tipo: 'info', mensaje: 'Datos de prueba reiniciados correctamente al estado de los mockups.' });
+      setPropietarios(PROPIETARIOS_INICIALES);
+      setPagos(crearPagosIniciales());
+      setNotificaciones([]);
+      setComprobanteActivo(null);
+      setAlertaGeneral({ tipo: 'info', mensaje: 'Datos de prueba reiniciados correctamente al estado inicial de los mockups.' });
     }
   };
 
@@ -511,7 +949,7 @@ export default function App() {
       esMoto ? celdasMotosDisponibles[0] : celdasCarrosDisponibles[0]
     ) || (esMoto ? 'M-01' : 'C-01');
 
-    // Crear nuevo movimiento con fecha y hora actual
+    // Crear nuevo movimiento con fecha y hora actual y responsable autenticado (RF-01, RF-03, RF-05)
     const nuevaFecha = getFechaHoraActualFormateada();
     const nuevoMovimiento: Movimiento = {
       id: Date.now(),
@@ -520,7 +958,13 @@ export default function App() {
       fecha_hora_entrada: nuevaFecha,
       fecha_hora_salida: null,
       estado: 'ACTIVO',
-      observaciones: `Ingreso regular registrado en sistema (Celda ${celdaAsignada})`
+      observaciones: `Ingreso regular registrado en sistema (Celda ${celdaAsignada})`,
+      id_usuario_entrada: usuarioSesion?.id_usuario || 1,
+      usuario_entrada_nombre: usuarioSesion ? `${usuarioSesion.nombres} ${usuarioSesion.apellidos}` : 'Usuario',
+      usuario_entrada_rol: usuarioSesion?.rol || 'EMPLEADO',
+      id_usuario_salida: null,
+      usuario_salida_nombre: null,
+      usuario_salida_rol: null
     };
 
     setMovimientos(prev => [nuevoMovimiento, ...prev]);
@@ -581,7 +1025,10 @@ export default function App() {
     const movFinalizado: Movimiento = {
       ...movActivoSalida,
       fecha_hora_salida: fechaSalida,
-      estado: 'FINALIZADO'
+      estado: 'FINALIZADO',
+      id_usuario_salida: usuarioSesion?.id_usuario || 1,
+      usuario_salida_nombre: usuarioSesion ? `${usuarioSesion.nombres} ${usuarioSesion.apellidos}` : 'Usuario',
+      usuario_salida_rol: usuarioSesion?.rol || 'EMPLEADO'
     };
 
     setMovimientos(prev => prev.map(m => m.id === movActivoSalida.id ? movFinalizado : m));
@@ -643,6 +1090,7 @@ export default function App() {
   const totalActivos = movimientos.filter(m => m.estado === 'ACTIVO').length;
   const totalVehiculosRegistrados = Object.keys(vehiculos).length;
   const salidasFinalizadas = movimientos.filter(m => m.estado === 'FINALIZADO').length;
+  const notificacionesPendientesCount = notificaciones.filter(n => n.estado_envio === 'GENERADA_PENDIENTE_CANAL').length;
 
   // Si no hay sesión activa, mostrar pantalla de Login (RF-01)
   if (!usuarioSesion) {
@@ -652,7 +1100,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex bg-[#f8fafc] text-[#0f172a] font-sans antialiased">
       {/* SIDEBAR AZUL OSCURO (Fiel a los mockups de Figma) */}
-      <aside className="w-64 bg-[#0b1320] text-slate-300 flex flex-col shrink-0 border-r border-white/5 sticky top-0 h-screen">
+      <aside className="w-64 bg-[#0b1320] text-slate-300 flex flex-col shrink-0 border-r border-white/5 sticky top-0 h-screen print:hidden">
             {/* Logotipo y Título */}
             <div className="p-5 flex items-center gap-3 border-b border-white/5">
               <div className="w-10 h-10 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
@@ -757,6 +1205,29 @@ export default function App() {
                   <span>Historial de movimientos</span>
                 </button>
 
+                <button
+                  onClick={() => setSeccionActiva('gestion_pagos')}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition text-left ${
+                    seccionActiva === 'gestion_pagos'
+                      ? 'bg-[#1e60f2] text-white shadow-md font-semibold'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="w-4 h-4" />
+                    <span>Gestión de pagos</span>
+                  </div>
+                  {notificacionesPendientesCount > 0 ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-white font-bold">
+                      {notificacionesPendientesCount}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-400/30">
+                      Mes
+                    </span>
+                  )}
+                </button>
+
                 {/* Sección Exclusiva para Rol Administrador (RF-09) */}
                 {usuarioSesion?.rol === 'ADMINISTRADOR' && (
                   <div className="pt-3 mt-3 border-t border-white/10">
@@ -799,7 +1270,7 @@ export default function App() {
           <main className="flex-1 flex flex-col min-w-0">
 
             {/* Encabezado Superior (Topbar) */}
-            <header className="bg-white h-16 border-b border-slate-200 px-8 flex items-center justify-between">
+            <header className="bg-white h-16 border-b border-slate-200 px-8 flex items-center justify-between print:hidden">
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-slate-500">Control de acceso</span>
                 <span className="text-slate-400">/</span>
@@ -810,6 +1281,7 @@ export default function App() {
                   {seccionActiva === 'registrar_salida' && 'Registrar salida'}
                   {seccionActiva === 'consultar_vehiculo' && 'Consultar vehículo'}
                   {seccionActiva === 'historial' && 'Historial de movimientos'}
+                  {seccionActiva === 'gestion_pagos' && 'Gestión de pagos y mensualidades'}
                   {seccionActiva === 'gestion_usuarios' && 'Gestión de usuarios y permisos'}
                 </span>
               </div>
@@ -860,7 +1332,7 @@ export default function App() {
             </header>
 
             {/* Reloj de Colombia */}
-            <div className="px-8 pt-4 pb-2 flex justify-end">
+            <div className="px-8 pt-4 pb-2 flex justify-end print:hidden">
               <div className="inline-flex items-center gap-2 text-xs text-slate-500 bg-white px-3.5 py-1.5 rounded-full border border-slate-200 shadow-xs">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 <span>{horaColombia}</span>
@@ -1086,16 +1558,45 @@ export default function App() {
                         setSeccionActiva('historial');
                         buscarParaHistorial('KLM482');
                       }}
-                      className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
+                      className="bg-white p-4 rounded-xl border border-slate-200 hover:border-blue-500 shadow-xs hover:shadow-md transition text-left group"
                     >
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <div className="flex justify-between items-center mb-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                           <Clock className="w-4 h-4" />
                         </div>
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition" />
                       </div>
-                      <h3 className="font-bold text-slate-800 text-sm mb-1">Historial de movimientos</h3>
-                      <p className="text-xs text-slate-500">Consulta el registro cronológico completo de cualquier placa.</p>
+                      <h3 className="font-bold text-slate-800 text-xs mb-1">Historial</h3>
+                      <p className="text-[11px] text-slate-500 leading-tight">Entradas y salidas por placa.</p>
+                    </button>
+                  </div>
+
+                  {/* Tarjeta de acceso rápido a Iteración 3: Gestión de Pagos */}
+                  <div className="bg-white rounded-xl border border-emerald-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <CreditCard className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 text-sm">Módulo de Gestión de Pagos (Iteración 3)</h3>
+                          {notificacionesPendientesCount > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                              {notificacionesPendientesCount} recordatorio(s) próximo(s)
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Administra mensualidades sin cobro de mora, propietarios asociados, comprobantes PDF y alertas a 5 días.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSeccionActiva('gestion_pagos')}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-2 shrink-0"
+                    >
+                      <span>Abrir Gestión de pagos</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
@@ -2013,8 +2514,8 @@ export default function App() {
                               <thead>
                                 <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider font-semibold">
                                   <th className="py-3 px-4">Celda</th>
-                                  <th className="py-3 px-4">Fecha y hora de entrada</th>
-                                  <th className="py-3 px-4">Fecha y hora de salida</th>
+                                  <th className="py-3 px-4">Entrada y Responsable</th>
+                                  <th className="py-3 px-4">Salida y Responsable</th>
                                   <th className="py-3 px-4">Estado</th>
                                   <th className="py-3 px-4">Observaciones</th>
                                 </tr>
@@ -2023,13 +2524,57 @@ export default function App() {
                                 {historialResultados.map(m => (
                                   <tr key={m.id} className="hover:bg-slate-50">
                                     <td className="py-3.5 px-4">
-                                      <span className="font-bold text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                                      <span className="font-bold text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-mono">
                                         {m.celda || 'C-14'}
                                       </span>
                                     </td>
-                                    <td className="py-3.5 px-4 font-medium text-slate-800">{m.fecha_hora_entrada}</td>
-                                    <td className="py-3.5 px-4 text-slate-600 font-medium">
-                                      {m.fecha_hora_salida || <span className="text-slate-400 font-bold">—</span>}
+                                    <td className="py-3.5 px-4">
+                                      <div className="font-medium text-slate-800">{m.fecha_hora_entrada}</div>
+                                      <div className="mt-1 flex items-center gap-1.5">
+                                        {m.usuario_entrada_nombre ? (
+                                          <>
+                                            <span className="text-xs text-slate-600 font-semibold">{m.usuario_entrada_nombre}</span>
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${
+                                              m.usuario_entrada_rol === 'ADMINISTRADOR'
+                                                ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                                            }`}>
+                                              {m.usuario_entrada_rol === 'ADMINISTRADOR' ? 'Admin' : 'Empleado'}
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <span className="text-[11px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">
+                                            No registrado
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="py-3.5 px-4">
+                                      {m.fecha_hora_salida ? (
+                                        <>
+                                          <div className="font-medium text-slate-800">{m.fecha_hora_salida}</div>
+                                          <div className="mt-1 flex items-center gap-1.5">
+                                            {m.usuario_salida_nombre ? (
+                                              <>
+                                                <span className="text-xs text-slate-600 font-semibold">{m.usuario_salida_nombre}</span>
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold border ${
+                                                  m.usuario_salida_rol === 'ADMINISTRADOR'
+                                                    ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                                    : 'bg-blue-50 text-blue-700 border-blue-200'
+                                                }`}>
+                                                  {m.usuario_salida_rol === 'ADMINISTRADOR' ? 'Admin' : 'Empleado'}
+                                                </span>
+                                              </>
+                                            ) : (
+                                              <span className="text-[11px] text-slate-400 italic bg-slate-100 px-1.5 py-0.5 rounded">
+                                                No registrado
+                                              </span>
+                                            )}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span className="text-slate-400 text-xs font-semibold">Pendiente (En parqueadero)</span>
+                                      )}
                                     </td>
                                     <td className="py-3.5 px-4">
                                       {m.estado === 'ACTIVO' ? (
@@ -2088,10 +2633,29 @@ export default function App() {
                 />
               )}
 
+              {/* ------------------------------------------------------------- */}
+              {/* SECCIÓN 7: GESTIÓN DE PAGOS (ITERACIÓN 3)                     */}
+              {/* ------------------------------------------------------------- */}
+              {seccionActiva === 'gestion_pagos' && (
+                <GestionPagos
+                  vehiculos={vehiculos}
+                  propietarios={propietarios}
+                  pagos={pagos}
+                  notificaciones={notificaciones}
+                  usuarioSesion={usuarioSesion}
+                  comprobanteActivo={comprobanteActivo}
+                  onSeleccionarComprobante={setComprobanteActivo}
+                  onConfirmarPago={handleConfirmarPago}
+                  onGuardarPropietario={handleGuardarPropietario}
+                  onMarcarNotificacionRevisada={handleMarcarNotificacionRevisada}
+                  onSincronizarNotificaciones={() => sincronizarNotificacionesVencimiento()}
+                />
+              )}
+
             </div>
 
             {/* Footer */}
-            <footer className="bg-white border-t border-slate-200 px-8 py-3 text-xs text-slate-500 flex items-center gap-2">
+            <footer className="bg-white border-t border-slate-200 px-8 py-3 text-xs text-slate-500 flex items-center gap-2 print:hidden">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
               <span>Los movimientos se registran con la fecha y hora del sistema.</span>
             </footer>

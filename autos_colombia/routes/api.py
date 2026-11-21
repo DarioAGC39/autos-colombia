@@ -12,6 +12,7 @@ from flask import Blueprint, jsonify
 from database import get_db_connection
 from dao.vehiculo_dao import VehiculoDAO
 from dao.movimiento_dao import MovimientoDAO
+from dao.propietario_dao import PropietarioDAO
 from routes.helpers import login_required
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
@@ -43,6 +44,34 @@ def buscar_vehiculo(placa):
             })
         else:
             return jsonify({'encontrado': False})
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@api_bp.route('/propietario/<identificacion>', endpoint='buscar_propietario')
+@login_required
+def buscar_propietario(identificacion):
+    """Retorna datos del propietario por cédula para evitar duplicados al asociar vehículos."""
+    ced = (identificacion or '').strip()
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'error': 'Sin conexión a MySQL'}), 500
+
+    cursor = conn.cursor(dictionary=True)
+    try:
+        prop = PropietarioDAO.obtener_por_identificacion(cursor, ced)
+        if prop:
+            return jsonify({'encontrado': True, 'propietario': {
+                'id_propietario': prop['id_propietario'],
+                'nombre_completo': prop['nombre_completo'],
+                'identificacion': prop['identificacion'],
+                'celular': prop['celular'],
+                'correo': prop['correo']
+            }})
+        return jsonify({'encontrado': False})
     except Exception as err:
         return jsonify({'error': str(err)}), 500
     finally:

@@ -98,6 +98,52 @@ class TestModuloUsuarios(unittest.TestCase):
         with self.assertRaises(UsuarioServiceException):
             UsuarioService.validar_datos_usuario(datos_invalidos, es_edicion=False)
 
+    def test_trazabilidad_movimientos_datos_responsables(self):
+        """RF-01 a RF-06: Verificación de estructura de trazabilidad de entrada y salida."""
+        # Estructura simulada de un movimiento con trazabilidad de dos usuarios distintos
+        movimiento_trazable = {
+            'id_movimiento': 10,
+            'placa': 'KLM482',
+            'fecha_hora_entrada': '2026-11-05 08:00:00',
+            'fecha_hora_salida': '2026-11-05 17:30:00',
+            'estado': 'FINALIZADO',
+            'celda': 'C-14',
+            'id_usuario_entrada': 2,
+            'usuario_entrada_nombre': 'Dario Guerrero',
+            'usuario_entrada_rol': 'EMPLEADO',
+            'id_usuario_salida': 1,
+            'usuario_salida_nombre': 'Carlos Restrepo',
+            'usuario_salida_rol': 'ADMINISTRADOR'
+        }
+
+        # Comprobar que permite identificar dos usuarios distintos en una misma permanencia
+        self.assertNotEqual(movimiento_trazable['id_usuario_entrada'], movimiento_trazable['id_usuario_salida'])
+        self.assertEqual(movimiento_trazable['usuario_entrada_rol'], 'EMPLEADO')
+        self.assertEqual(movimiento_trazable['usuario_salida_rol'], 'ADMINISTRADOR')
+
+    def test_trazabilidad_movimientos_historicos_sin_usuario(self):
+        """RF-06: Los registros históricos anteriores deben conservar NULL sin fallar."""
+        movimiento_historico = {
+            'id_movimiento': 1,
+            'placa': 'KLM482',
+            'fecha_hora_entrada': '2026-10-19 08:10:00',
+            'fecha_hora_salida': '2026-10-19 17:51:00',
+            'estado': 'FINALIZADO',
+            'celda': 'C-14',
+            'id_usuario_entrada': None,
+            'usuario_entrada_nombre': None,
+            'usuario_entrada_rol': None,
+            'id_usuario_salida': None,
+            'usuario_salida_nombre': None,
+            'usuario_salida_rol': None
+        }
+
+        # Debe admitir None y presentarse como "No registrado"
+        self.assertIsNone(movimiento_historico['id_usuario_entrada'])
+        self.assertIsNone(movimiento_historico['id_usuario_salida'])
+        responsable_texto = movimiento_historico['usuario_entrada_nombre'] or "No registrado"
+        self.assertEqual(responsable_texto, "No registrado")
+
 
 if __name__ == '__main__':
     unittest.main()

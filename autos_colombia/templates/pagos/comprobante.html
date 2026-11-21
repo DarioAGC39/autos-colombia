@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Comprobante {{ comp.numero_comprobante }} - Autos Colombia{% endblock %}
+{% block header_title %}Comprobante de Pago{% endblock %}
+
+{% block content %}
+<div class="no-print" style="max-width: 760px; margin: 0 auto 18px auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <a href="{{ url_for('pagos.index', tab='historial') }}" class="btn btn-secondary">
+        ← Volver a Gestión de Pagos
+    </a>
+    <button type="button" onclick="window.print()" class="btn btn-primary">
+        🖨️ Imprimir / Guardar en PDF
+    </button>
+</div>
+
+<!-- COMPROBANTE OFICIAL DE PAGO (RN04) -->
+<div class="receipt-sheet">
+    <!-- Encabezado del recibo -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+        <div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: #0b1320; letter-spacing: -0.4px;">AUTOS COLOMBIA</div>
+            <div style="font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.8px;">
+                Parqueadero Mensual · Comprobante Oficial de Pago
+            </div>
+            <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">
+                Capacidad: 80 Celdas (70 Carros · 10 Motos)
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <span style="font-size: 0.72rem; text-transform: uppercase; color: #64748b; font-weight: 700; display: block;">N° Comprobante</span>
+            <span style="font-size: 1.35rem; font-weight: 800; color: #1e60f2; font-family: monospace;">{{ comp.numero_comprobante }}</span>
+            <div style="margin-top: 6px;">
+                <span class="pill-badge pill-in-parking"><span class="dot-green"></span> {{ comp.estado_pago }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datos del propietario y vehículo -->
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+        <div>
+            <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block;">Propietario</span>
+            <strong style="font-size: 1rem; color: #0f172a;">{{ comp.propietario_nombre }}</strong>
+            <div style="font-size: 0.82rem; color: #475569; margin-top: 2px;">Cédula / ID: <strong>{{ comp.propietario_identificacion }}</strong></div>
+            <div style="font-size: 0.78rem; color: #64748b;">Cel: {{ comp.propietario_celular }} · {{ comp.propietario_correo }}</div>
+        </div>
+        <div>
+            <span style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; display: block;">Vehículo Asociado</span>
+            <strong style="font-size: 1.1rem; color: #0f172a; letter-spacing: 0.8px;">{{ comp.placa }}</strong>
+            <div style="font-size: 0.82rem; color: #475569; margin-top: 2px;">{{ comp.vehiculo_marca }} {{ comp.vehiculo_modelo }} ({{ comp.vehiculo_color }})</div>
+            <div style="font-size: 0.78rem; color: #64748b;">Categoría tarifaria: <strong>{{ comp.tipo_vehiculo_tarifa }}</strong></div>
+        </div>
+    </div>
+
+    <!-- Detalle de la mensualidad -->
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <thead>
+            <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: #64748b;">
+                <th style="padding: 10px 8px;">Concepto</th>
+                <th style="padding: 10px 8px;">Periodo / Vigencia</th>
+                <th style="padding: 10px 8px;">Fecha de Pago</th>
+                <th style="padding: 10px 8px;">Vencimiento</th>
+                <th style="padding: 10px 8px; text-align: right;">Valor</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="border-bottom: 1px solid #f1f5f9; font-size: 0.9rem;">
+                <td style="padding: 14px 8px;">
+                    <strong>{{ comp.concepto }}</strong><br>
+                    <span style="font-size: 0.76rem; color: #64748b;">Medio de pago: {{ comp.metodo_pago }}</span>
+                </td>
+                <td style="padding: 14px 8px;">{{ comp.fecha_inicio_periodo }} al {{ comp.fecha_vencimiento }}</td>
+                <td style="padding: 14px 8px;">{{ comp.fecha_pago }}</td>
+                <td style="padding: 14px 8px;"><strong style="color: #1e40af;">{{ comp.fecha_vencimiento }}</strong></td>
+                <td style="padding: 14px 8px; text-align: right;"><strong>{{ formatear_cop(comp.valor_mensualidad) }}</strong></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9; font-size: 0.86rem; color: #059669;">
+                <td colspan="4" style="padding: 10px 8px;">Recargo por mora o retraso (Regla RN02 — Exento)</td>
+                <td style="padding: 10px 8px; text-align: right;"><strong>$0</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Total pagado -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+        <div>
+            <span style="font-size: 0.8rem; color: #065f46; font-weight: 600; display: block;">TOTAL PAGADO</span>
+            <span style="font-size: 0.75rem; color: #047857;">{{ comp.observaciones or 'Mensualidad confirmada en el sistema' }}</span>
+        </div>
+        <div style="font-size: 1.55rem; font-weight: 800; color: #047857;">
+            {{ formatear_cop(comp.valor_pagado) }} COP
+        </div>
+    </div>
+
+    <!-- Pie de comprobante -->
+    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; color: #64748b; padding-top: 14px; border-top: 1px dashed #cbd5e1; flex-wrap: wrap; gap: 10px;">
+        <span>
+            Recibido por: <strong>{{ comp.usuario_registro_nombre or 'Operador del sistema' }}</strong>
+            {% if comp.usuario_registro_rol %}({{ comp.usuario_registro_rol }}){% endif %}
+        </span>
+        <span>Emisión: {{ comp.fecha_creacion }} · Autos Colombia</span>
+    </div>
+</div>
+{% endblock %}

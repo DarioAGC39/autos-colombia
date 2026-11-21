@@ -1,4 +1,3 @@
-
 node_modules/
 build/
 dist/
@@ -7,25 +6,3 @@ coverage/
 *.log
 .env*
 !.env.example
-
-# Entorno virtual de Python
-venv/
-.venv/
-env/
-
-# Archivos temporales de Python
-__pycache__/
-*.py[cod]
-
-# Archivos locales de Visual Studio Code
-.vscode/
-
-# Archivos del sistema Windows
-Thumbs.db
-
-
-# Archivos temporales de Google AI Studio
-.aistudio/artifacts/
-
-# Copia comprimida del proyecto
-public/autos_colombia.zip

@@ -66,7 +66,7 @@ class ParqueaderoService:
         return cls.TARIFA_MENSUAL_CARRO
 
     @classmethod
-    def registrar_ingreso(cls, conn, datos):
+    def registrar_ingreso(cls, conn, datos, id_usuario=None):
         """
         Regla A: Registrar entrada de vehículo.
         - Valida campos obligatorios y formato de placa.
@@ -74,6 +74,7 @@ class ParqueaderoService:
         - Comprueba transaccionalmente que no tenga un movimiento activo.
         - Asigna celda automáticamente o valida la celda seleccionada.
         - Registra fecha y hora automáticas (NOW()).
+        - Asocia el ID del usuario responsable autenticado (RF-01, RF-03).
         """
         placa = (datos.get('placa') or '').strip().upper()
         tipo = cls.normalizar_tipo(datos.get('tipo'))
@@ -124,9 +125,9 @@ class ParqueaderoService:
                     conn.rollback()
                     raise ReglaNegocioException(f"No hay celdas disponibles para {tipo} en este momento (Capacidad completa).")
 
-            # 5. Insertar movimiento con estado ACTIVO
+            # 5. Insertar movimiento con estado ACTIVO y responsable de entrada
             obs = f"Ingreso mensual registrado en celda {celda}"
-            id_mov = MovimientoDAO.registrar_entrada(cursor, placa, celda, obs)
+            id_mov = MovimientoDAO.registrar_entrada(cursor, placa, celda, obs, id_usuario_entrada=id_usuario)
             nuevo_mov = MovimientoDAO.obtener_por_id(cursor, id_mov)
 
             conn.commit()
@@ -161,13 +162,14 @@ class ParqueaderoService:
             cursor.close()
 
     @classmethod
-    def confirmar_salida(cls, conn, placa):
+    def confirmar_salida(cls, conn, placa, id_usuario=None):
         """
-        Regla B - Paso 2: Finalizar movimiento explícitamente tras confirmación del empleado.
+        Regla B - Paso 2: Finalizar movimiento explícitamente tras confirmación del empleado/administrador.
         - Verifica que el vehículo exista.
         - Comprueba que tenga un movimiento activo.
         - Registra fecha_hora_salida automática (NOW()).
         - Cambia estado a 'FINALIZADO' y libera la celda asignada.
+        - Asocia el ID del usuario responsable que confirmó la salida (RF-02, RF-03).
         """
         placa_limpia = (placa or '').strip().upper()
         if not placa_limpia:
@@ -187,9 +189,9 @@ class ParqueaderoService:
                 conn.rollback()
                 raise ReglaNegocioException(f"El vehículo {placa_limpia} no tiene un movimiento activo (ya está fuera del parqueadero).")
 
-            # Finalizar movimiento
+            # Finalizar movimiento con responsable de salida
             obs = f"Salida confirmada. Celda {mov.get('celda', 'N/A')} liberada."
-            MovimientoDAO.registrar_salida(cursor, mov['id_movimiento'], obs)
+            MovimientoDAO.registrar_salida(cursor, mov['id_movimiento'], obs, id_usuario_salida=id_usuario)
 
             resumen = MovimientoDAO.obtener_por_id(cursor, mov['id_movimiento'])
             conn.commit()

@@ -9,7 +9,7 @@ Responsabilidad: Manejo en DOS PASOS del registro de salida.
 """
 
 from datetime import datetime
-from flask import Blueprint, render_template, request, flash
+from flask import Blueprint, render_template, request, flash, session
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService, ReglaNegocioException
 from routes.helpers import login_required
@@ -38,10 +38,12 @@ def registrar_salida():
 
     try:
         # ==============================================================
-        # PASO 2: CONFIRMACIÓN EXPLÍCITA DEL EMPLEADO (Solo con botón 'Registrar salida')
+        # PASO 2: CONFIRMACIÓN EXPLÍCITA (Solo con botón 'Registrar salida')
+        # Inyección automática del usuario responsable desde la sesión (RF-02, RF-03, RF-05)
         # ==============================================================
         if request.method == 'POST' and accion == 'confirmar_salida':
-            vehiculo, resumen_salida = ParqueaderoService.confirmar_salida(conn, placa_busqueda)
+            id_usuario_actual = session.get('usuario_id')
+            vehiculo, resumen_salida = ParqueaderoService.confirmar_salida(conn, placa_busqueda, id_usuario=id_usuario_actual)
             fecha_salida = resumen_salida['fecha_hora_salida']
             fecha_str = fecha_salida.strftime('%d de %B de %Y a las %H:%M') if isinstance(fecha_salida, datetime) else str(fecha_salida)
 

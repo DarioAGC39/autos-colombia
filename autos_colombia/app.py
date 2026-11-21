@@ -27,6 +27,7 @@ from routes.entradas import entradas_bp
 from routes.salidas import salidas_bp
 from routes.consultas import consultas_bp
 from routes.disponibilidad import disponibilidad_bp
+from routes.pagos import pagos_bp
 from routes.api import api_bp
 
 
@@ -59,25 +60,39 @@ def create_app():
     app.register_blueprint(salidas_bp)
     app.register_blueprint(consultas_bp)
     app.register_blueprint(disponibilidad_bp)
+    app.register_blueprint(pagos_bp)
     app.register_blueprint(api_bp)
 
-    # Mapeo de compatibilidad global de endpoints para plantillas Jinja2
-    # Permite invocar url_for('index') o url_for('dashboard.index') indistintamente
+    # Mapeo de compatibilidad global de endpoints para plantillas Jinja2.
+    # url_for() resuelve contra las reglas del url_map, no contra view_functions:
+    # por eso se registran reglas alias reales (mismo pattern y mismo view func).
+    # Esto permite url_for('index') y url_for('dashboard.index') indistintamente.
     with app.app_context():
         rutas_compatibilidad = {
             'index': 'dashboard.index',
             'login': 'auth.login',
             'logout': 'auth.logout',
             'usuarios': 'usuarios.listar',
+            'pagos': 'pagos.index',
             'registrar_entrada': 'entradas.registrar_entrada',
-            'registrar_salida': 'salidas.salidas_bp.registrar_salida' if 'salidas.salidas_bp.registrar_salida' in app.view_functions else 'salidas.registrar_salida',
+            'registrar_salida': 'salidas.registrar_salida',
             'consultar_vehiculo': 'consultas.consultar_vehiculo',
             'historial': 'consultas.historial',
             'disponibilidad': 'disponibilidad.disponibilidad',
         }
+        reglas_por_endpoint = {rule.endpoint: rule for rule in app.url_map.iter_rules()}
         for alias, original in rutas_compatibilidad.items():
-            if original in app.view_functions and alias not in app.view_functions:
-                app.view_functions[alias] = app.view_functions[original]
+            regla = reglas_por_endpoint.get(original)
+            if regla is None or alias in reglas_por_endpoint:
+                continue
+            metodos = sorted(regla.methods - {'HEAD', 'OPTIONS'})
+            app.add_url_rule(
+                regla.rule,
+                endpoint=alias,
+                view_func=app.view_functions[original],
+                methods=metodos,
+                defaults=regla.defaults,
+            )
 
     return app
 

@@ -26,6 +26,15 @@ class Config:
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'autos_colombia')
 
+    # Configuración opcional para canales externos de notificación (RN06 - Sección 7)
+    MAIL_SERVER = os.getenv('MAIL_SERVER', '').strip()
+    MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
+    MAIL_USERNAME = os.getenv('MAIL_USERNAME', '').strip()
+    MAIL_PASSWORD = os.getenv('MAIL_PASSWORD', '').strip()
+    MAIL_FROM = os.getenv('MAIL_FROM', 'notificaciones@autoscolombia.com').strip()
+    SMS_PROVIDER_URL = os.getenv('SMS_PROVIDER_URL', '').strip()
+    SMS_API_KEY = os.getenv('SMS_API_KEY', '').strip()
+
     @classmethod
     def get_db_config(cls):
         """Retorna un diccionario listo para usar con mysql.connector.connect()"""
@@ -38,4 +47,12 @@ class Config:
             'charset': 'utf8mb4',
             'collation': 'utf8mb4_spanish_ci',
             'autocommit': False  # Se manejan transacciones explícitas para seguridad
+        }
+
+    @classmethod
+    def notificaciones_externas_configuradas(cls):
+        """Indica qué canales externos reales están configurados en el entorno."""
+        return {
+            'correo_smtp': bool(cls.MAIL_SERVER and cls.MAIL_USERNAME and cls.MAIL_PASSWORD),
+            'sms_gateway': bool(cls.SMS_PROVIDER_URL and cls.SMS_API_KEY),
         }

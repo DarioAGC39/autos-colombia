@@ -65,3 +65,19 @@ class VehiculoDAO:
         cursor.execute("SELECT COUNT(*) AS total FROM vehiculo")
         res = cursor.fetchone()
         return res['total'] if res else 0
+
+    @staticmethod
+    def obtener_con_propietario(cursor, placa):
+        """Retorna el vehículo junto con los datos de su propietario si está asociado."""
+        sql = """
+            SELECT v.placa, v.tipo, v.color, v.marca, v.modelo, v.id_propietario,
+                   p.nombre_completo AS propietario_nombre,
+                   p.identificacion AS propietario_identificacion,
+                   p.celular AS propietario_celular,
+                   p.correo AS propietario_correo
+            FROM vehiculo v
+            LEFT JOIN propietario p ON v.id_propietario = p.id_propietario
+            WHERE v.placa = %s
+        """
+        cursor.execute(sql, (placa,))
+        return cursor.fetchone()

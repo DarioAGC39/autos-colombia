@@ -187,10 +187,56 @@ Esta iteración incorpora la administración integral de identidades y accesos d
 
 *Nota sobre seguridad:* Las contraseñas se almacenan mediante hash criptográfico generado con `werkzeug.security` (`scrypt` / `pbkdf2:sha256`). **Nunca se almacenan contraseñas en texto plano.**
 
-### 7.3 Migración SQL
+### 7.3 Migración SQL (Usuarios)
 Para actualizar una base de datos existente de la Iteración 1 a la Iteración 2:
 ```bash
 mysql -u root -p autos_colombia < migration_usuarios.sql
 ```
 O desde MySQL Workbench / phpMyAdmin, abre y ejecuta el script `migration_usuarios.sql`.
+
+---
+
+## 🔍 8. Mejora de Trazabilidad: Responsables de Entradas y Salidas
+
+Esta mejora incorpora auditoría y trazabilidad completa sobre las operaciones de los vehículos:
+
+### 8.1 Requerimientos Implementados
+- **RF-01 Responsable de entrada:** Al registrar un ingreso, se guarda automáticamente el `id_usuario` en `id_usuario_entrada`.
+- **RF-02 Responsable de salida:** Al confirmar la salida, se guarda automáticamente el `id_usuario` en `id_usuario_salida`.
+- **RF-03 Aplicación a ambos roles:** Funciona tanto para `ADMINISTRADOR` como para `EMPLEADO` sin distinción.
+- **RF-04 Historial de movimientos:** El historial visualiza:
+  - Fecha y hora de entrada + Nombre y rol del responsable de entrada.
+  - Fecha y hora de salida + Nombre y rol del responsable de salida.
+  - Celda asignada y estado.
+- **RF-05 Integridad y seguridad:** El responsable se obtiene de forma segura desde `session['usuario_id']` en el servidor; el usuario no puede alterarlo ni seleccionarlo manualmente en la interfaz.
+- **RF-06 Conservación histórica:** Los movimientos previos a esta mejora permanecen intactos con valor `NULL` y se muestran en el historial como `"No registrado"` con un badge neutral (sin inventar datos ficticios).
+
+### 8.2 Migración SQL de Trazabilidad
+Para aplicar esta mejora sobre una base de datos con las tablas existentes:
+```bash
+mysql -u root -p autos_colombia < migration_trazabilidad.sql
+```
+El script agrega las columnas `id_usuario_entrada` e `id_usuario_salida` con claves foráneas `ON UPDATE CASCADE ON DELETE SET NULL` e índices de auditoría.
+
+---
+
+## 💳 9. Iteración 3: Módulo de Gestión de Pagos, Propietarios y Notificaciones
+
+Esta iteración amplía Autos Colombia con la administración completa de mensualidades sin afectar las operaciones de ingreso, salida, celdas o usuarios:
+
+### 9.1 Reglas de Negocio Implementadas (RN01 - RN07)
+- **RN01 (Modalidad exclusivamente mensual):** Carros `$250.000 COP/mes` y Motos `$100.000 COP/mes`. Sin cobros por horas o días.
+- **RN02 (Sin cobro de mora):** Si una mensualidad venció, el cliente paga únicamente una mensualidad completa (`valor_mora = $0`).
+- **RN03 (Renovación desde fecha de pago):** La nueva mensualidad inicia el día del pago y vence exactamente 1 mes calendario después.
+- **RN04 (Comprobante de pago oficial):** Cada pago confirmado genera un recibo con consecutivo (`AC-YYYY-NNNNN`), propietario, cédula, placa, periodo, fecha de pago, vencimiento, valor y estado, con vista lista para imprimir o guardar en PDF (`@media print`).
+- **RN05 (Historial de pagos):** Consulta histórica por vehículo y listado general filtrable.
+- **RN06 (Notificaciones 5 días antes):** Generación automática de recordatorios cuando faltan ≤ 5 días para vencer. Si no hay servidor SMTP/SMS configurado en `.env`, las alertas se muestran en el sistema sin simular envíos externos reales.
+- **RN07 (Propietarios sin duplicados):** Registro único por cédula (`identificacion`) con relación `1:N` hacia uno o varios vehículos.
+
+### 9.2 Migración SQL (Gestión de Pagos)
+Para actualizar una base de datos existente de la Iteración 2 a la Iteración 3 sin perder datos:
+```bash
+mysql -u root -p autos_colombia < migration_pagos.sql
+```
+Esto crea las tablas `propietario`, `pago` y `notificacion`, añade `id_propietario` (nullable) a `vehiculo` y carga casos de prueba para mensualidades *Al día*, *Próxima a vencer (≤ 5 días)* y *Vencida*.
 

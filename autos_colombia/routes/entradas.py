@@ -7,7 +7,7 @@ Responsabilidad: Manejo de solicitudes HTTP para ingreso de vehículos.
 """
 
 from datetime import datetime
-from flask import Blueprint, render_template, request, flash
+from flask import Blueprint, render_template, request, flash, session
 from database import get_db_connection
 from services.parqueadero_service import ParqueaderoService, ReglaNegocioException
 from routes.helpers import login_required
@@ -37,7 +37,9 @@ def registrar_entrada():
         return render_template('registrar_entrada.html', datos=datos, errores={})
 
     try:
-        nuevo_mov = ParqueaderoService.registrar_ingreso(conn, datos)
+        # Inyección automática del usuario responsable desde la sesión (RF-01, RF-03, RF-05)
+        id_usuario_actual = session.get('usuario_id')
+        nuevo_mov = ParqueaderoService.registrar_ingreso(conn, datos, id_usuario=id_usuario_actual)
         fecha_ingreso = nuevo_mov['fecha_hora_entrada']
         fecha_str = fecha_ingreso.strftime('%d de %B de %Y a las %H:%M') if isinstance(fecha_ingreso, datetime) else str(fecha_ingreso)
 

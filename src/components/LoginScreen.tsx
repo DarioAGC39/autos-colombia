@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { LogIn, Lock, User, AlertCircle, ShieldCheck, Car, Key } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { LogIn, Lock, User, AlertCircle, ShieldCheck, Car, Key, Eye, EyeOff } from 'lucide-react';
 import { Usuario } from './GestionUsuarios';
 
 interface LoginScreenProps {
@@ -10,7 +10,29 @@ interface LoginScreenProps {
 export default function LoginScreen({ usuarios, onLoginExitoso }: LoginScreenProps) {
   const [identificador, setIdentificador] = useState('admin');
   const [password, setPassword] = useState('Admin123*');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const timerPasswordRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerPasswordRef.current) clearTimeout(timerPasswordRef.current);
+    };
+  }, []);
+
+  const toggleMostrarPassword = () => {
+    if (mostrarPassword) {
+      if (timerPasswordRef.current) clearTimeout(timerPasswordRef.current);
+      setMostrarPassword(false);
+    } else {
+      setMostrarPassword(true);
+      if (timerPasswordRef.current) clearTimeout(timerPasswordRef.current);
+      // Auto-ocultar tras 3.5 segundos ("por un momento")
+      timerPasswordRef.current = window.setTimeout(() => {
+        setMostrarPassword(false);
+      }, 3500);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,19 +115,38 @@ export default function LoginScreen({ usuarios, onLoginExitoso }: LoginScreenPro
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Contraseña
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Contraseña
+                </label>
+                {mostrarPassword && (
+                  <span className="text-[11px] font-medium text-[#1e60f2] flex items-center gap-1 animate-pulse">
+                    <span>Visible por 3.5s</span>
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                 <input
-                  type="password"
+                  type={mostrarPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full h-10 pl-10 pr-3 border border-slate-200 rounded-lg text-sm focus:border-[#1e60f2] outline-none"
+                  className="w-full h-10 pl-10 pr-10 border border-slate-200 rounded-lg text-sm focus:border-[#1e60f2] outline-none"
                 />
+                <button
+                  type="button"
+                  onClick={toggleMostrarPassword}
+                  title={mostrarPassword ? "Ocultar contraseña" : "Ver por un momento (3.5s)"}
+                  className="absolute right-2.5 top-2.5 p-1 text-slate-400 hover:text-[#1e60f2] hover:bg-slate-100 rounded-md transition"
+                >
+                  {mostrarPassword ? (
+                    <EyeOff className="w-4 h-4 text-[#1e60f2]" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 

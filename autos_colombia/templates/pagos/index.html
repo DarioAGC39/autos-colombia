@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Pagos - Autos Colombia{% endblock %}
+{% block header_title %}Gestión de pagos{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+    <div>
+        <h2 class="page-title">Gestión de pagos y mensualidades</h2>
+        <p class="page-description">Control de mensualidades ($250.000 Carros / $100.000 Motos), renovaciones sin mora, comprobantes y recordatorios.</p>
+    </div>
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 8px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 600;">
+        <span>Modalidad: 100% Mensual · Mora por retraso: $0</span>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- A. PANEL GENERAL DE PAGOS (4 KPIs)                             -->
+<!-- ============================================================== -->
+<div class="payments-kpi-grid">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number">{{ kpis.total_pagadas }}</span>
+            <span class="stat-label">Mensualidades pagadas</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon-wrapper" style="background: #fffbeb; color: #d97706;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number" style="color: #b45309;">{{ kpis.proximas_vencer }}</span>
+            <span class="stat-label">Próximas a vencer (≤ 5 días)</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon-wrapper" style="background: #fef2f2; color: #dc2626;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number" style="color: #b91c1c;">{{ kpis.vencidas }}</span>
+            <span class="stat-label">Mensualidades vencidas</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        </div>
+        <div class="stat-details">
+            <span class="stat-number" style="font-size: 1.35rem; color: #047857;">{{ formatear_cop(kpis.ingresos_totales) }}</span>
+            <span class="stat-label">Ingresos recaudados (COP)</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- PESTAÑAS DE NAVEGACIÓN DEL MÓDULO                              -->
+<!-- ============================================================== -->
+<div class="payments-tabs">
+    <a href="{{ url_for('pagos.index', tab='registro', placa=placa) }}" class="payment-tab-btn {% if tab == 'registro' %}active{% endif %}">
+        <span>💳 Registrar Pago</span>
+    </a>
+    <a href="{{ url_for('pagos.index', tab='vencimientos', filtro_estado=filtro_estado) }}" class="payment-tab-btn {% if tab == 'vencimientos' %}active{% endif %}">
+        <span>📅 Control de Vencimientos</span>
+        {% if kpis.proximas_vencer + kpis.vencidas > 0 %}
+            <span style="background: rgba(239, 68, 68, 0.15); color: {% if tab == 'vencimientos' %}#ffffff{% else %}#b91c1c{% endif %}; padding: 1px 7px; border-radius: 9999px; font-size: 0.72rem;">
+                {{ kpis.proximas_vencer + kpis.vencidas }}
+            </span>
+        {% endif %}
+    </a>
+    <a href="{{ url_for('pagos.index', tab='historial') }}" class="payment-tab-btn {% if tab == 'historial' %}active{% endif %}">
+        <span>🧾 Historial y Comprobantes</span>
+    </a>
+    <a href="{{ url_for('pagos.index', tab='propietarios') }}" class="payment-tab-btn {% if tab == 'propietarios' %}active{% endif %}">
+        <span>👤 Propietarios ({{ propietarios|length }})</span>
+    </a>
+    <a href="{{ url_for('pagos.index', tab='notificaciones') }}" class="payment-tab-btn {% if tab == 'notificaciones' %}active{% endif %}">
+        <span>🔔 Notificaciones (5 días)</span>
+        {% set pendientes = notificaciones|selectattr('estado_envio', 'equalto', 'GENERADA_PENDIENTE_CANAL')|list|length %}
+        {% if pendientes > 0 %}
+            <span style="background: #f59e0b; color: #ffffff; padding: 1px 7px; border-radius: 9999px; font-size: 0.72rem;">
+                {{ pendientes }}
+            </span>
+        {% endif %}
+    </a>
+</div>
+
+<!-- ============================================================== -->
+<!-- B. PESTAÑA 1: REGISTRO DE PAGOS                                -->
+<!-- ============================================================== -->
+{% if tab == 'registro' %}
+<div class="grid-layout-two-columns">
+    <div class="form-container-card">
+        <div class="card-header-clean">
+            <h3 class="card-title">Registrar Pago de Mensualidad</h3>
+            <p class="card-subtitle">Busca el vehículo por placa para consultar su estado y confirmar el pago mensual.</p>
+        </div>
+
+        <!-- Buscador de placa -->
+        <form action="{{ url_for('pagos.index') }}" method="GET" style="margin-bottom: 24px;">
+            <input type="hidden" name="tab" value="registro">
+            <label for="placa-pago-buscar" class="search-label">Buscar vehículo por placa</label>
+            <div class="search-row">
+                <input
+                    type="text"
+                    id="placa-pago-buscar"
+                    name="placa"
+                    class="form-control search-control text-uppercase"
+                    placeholder="Ej: XYZ789 o KLM482"
+                    maxlength="7"
+                    value="{{ placa or '' }}"
+                    required
+                    autocomplete="off"
+                >
+                <button type="submit" class="btn btn-primary btn-search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span>Consultar placa</span>
+                </button>
+            </div>
+            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span style="font-size: 0.74rem; color: var(--text-muted);">Pruebas rápidas:</span>
+                <a href="{{ url_for('pagos.index', tab='registro', placa='XYZ789') }}" style="font-size: 0.74rem; padding: 2px 8px; border-radius: 6px; background: #fef2f2; color: #b91c1c; text-decoration: none; border: 1px solid #fecaca; font-weight: 600;">XYZ789 (Vencida)</a>
+                <a href="{{ url_for('pagos.index', tab='registro', placa='ABC123') }}" style="font-size: 0.74rem; padding: 2px 8px; border-radius: 6px; background: #fffbeb; color: #b45309; text-decoration: none; border: 1px solid #fde68a; font-weight: 600;">ABC123 (Próx. a vencer)</a>
+                <a href="{{ url_for('pagos.index', tab='registro', placa='KLM482') }}" style="font-size: 0.74rem; padding: 2px 8px; border-radius: 6px; background: #ecfdf5; color: #047857; text-decoration: none; border: 1px solid #a7f3d0; font-weight: 600;">KLM482 (Al día)</a>
+                <a href="{{ url_for('pagos.index', tab='registro', placa='MOT101') }}" style="font-size: 0.74rem; padding: 2px 8px; border-radius: 6px; background: #f5f3ff; color: #6d28d9; text-decoration: none; border: 1px solid #ddd6fe; font-weight: 600;">MOT101 (Moto)</a>
+            </div>
+        </form>
+
+        {% if resultado_busqueda %}
+        {% set v = resultado_busqueda.vehiculo %}
+        {% set est = resultado_busqueda.estado_mensualidad %}
+
+        <!-- Ficha del vehículo y estado actual -->
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                <div>
+                    <span style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); letter-spacing: 0.5px;">{{ v.placa }}</span>
+                    <span style="font-size: 0.88rem; color: var(--text-muted); margin-left: 8px;">{{ v.marca }} {{ v.modelo }} · {{ v.tipo }} ({{ v.color }})</span>
+                </div>
+                {% if est.codigo == 'AL_DIA' %}
+                    <span class="pill-badge pill-in-parking"><span class="dot-green"></span> {{ est.etiqueta }}</span>
+                {% elif est.codigo == 'PROXIMA_A_VENCER' %}
+                    <span class="pill-badge pill-warning-soft"><span class="dot-amber"></span> {{ est.etiqueta }}</span>
+                {% elif est.codigo == 'VENCIDA' %}
+                    <span class="pill-badge pill-danger-soft"><span class="dot-red"></span> {{ est.etiqueta }}</span>
+                {% else %}
+                    <span class="pill-badge pill-out-parking"><span class="dot-gray"></span> {{ est.etiqueta }}</span>
+                {% endif %}
+            </div>
+
+            {% if resultado_busqueda.ultimo_pago %}
+            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 16px;">
+                <span><strong>Último pago:</strong> {{ resultado_busqueda.ultimo_pago.fecha_pago }} ({{ resultado_busqueda.ultimo_pago.numero_comprobante }})</span>
+                <span><strong>Vencimiento actual:</strong> {{ resultado_busqueda.ultimo_pago.fecha_vencimiento }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Formulario de confirmación de pago -->
+        <form action="{{ url_for('pagos.confirmar') }}" method="POST" id="form-confirmar-pago">
+            <input type="hidden" name="placa" value="{{ v.placa }}">
+
+            <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">
+                1. Datos del Propietario (RN07 — Sin duplicados por cédula)
+            </h4>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="identificacion_propietario" class="form-label">Número de Cédula <span class="required-star">*</span></label>
+                    <input
+                        type="text"
+                        id="identificacion_propietario"
+                        name="identificacion_propietario"
+                        class="form-control"
+                        value="{{ v.propietario_identificacion or '' }}"
+                        placeholder="Ej: 1015423890"
+                        required
+                    >
+                    <span class="field-helper-text" id="ayuda-cedula-prop">Si la cédula ya existe, se cargarán los datos automáticamente.</span>
+                </div>
+                <div class="form-group">
+                    <label for="nombre_propietario" class="form-label">Nombre Completo <span class="required-star">*</span></label>
+                    <input
+                        type="text"
+                        id="nombre_propietario"
+                        name="nombre_propietario"
+                        class="form-control"
+                        value="{{ v.propietario_nombre or '' }}"
+                        placeholder="Nombre y apellidos completos"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="celular_propietario" class="form-label">Número de Celular <span class="required-star">*</span></label>
+                    <input
+                        type="text"
+                        id="celular_propietario"
+                        name="celular_propietario"
+                        class="form-control"
+                        value="{{ v.propietario_celular or '' }}"
+                        placeholder="Ej: 3104567890"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="correo_propietario" class="form-label">Correo Electrónico <span class="required-star">*</span></label>
+                    <input
+                        type="email"
+                        id="correo_propietario"
+                        name="correo_propietario"
+                        class="form-control"
+                        value="{{ v.propietario_correo or '' }}"
+                        placeholder="propietario@correo.com"
+                        required
+                    >
+                </div>
+            </div>
+
+            <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--text-main); margin: 18px 0 12px 0; padding-top: 14px; border-top: 1px solid #f1f5f9;">
+                2. Liquidación de Mensualidad (RN01, RN02, RN03)
+            </h4>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fecha_pago" class="form-label">Fecha de Pago (Inicio nueva mensualidad) <span class="required-star">*</span></label>
+                    <input
+                        type="date"
+                        id="fecha_pago"
+                        name="fecha_pago"
+                        class="form-control"
+                        value="{{ resultado_busqueda.fecha_pago_propuesta }}"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="fecha_vencimiento_preview" class="form-label">Nueva Fecha de Vencimiento (+1 mes)</label>
+                    <input
+                        type="date"
+                        id="fecha_vencimiento_preview"
+                        class="form-control"
+                        value="{{ resultado_busqueda.fecha_vencimiento_propuesta }}"
+                        readonly
+                        style="background: #f1f5f9; font-weight: 700; color: #1e40af;"
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="metodo_pago" class="form-label">Medio de Pago <span class="required-star">*</span></label>
+                    <select id="metodo_pago" name="metodo_pago" class="form-select" required>
+                        {% for mp in metodos_pago %}
+                        <option value="{{ mp }}">{{ mp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="observaciones" class="form-label">Observaciones</label>
+                    <input
+                        type="text"
+                        id="observaciones"
+                        name="observaciones"
+                        class="form-control"
+                        placeholder="Ej: Renovación mensual sin recargo"
+                    >
+                </div>
+            </div>
+
+            <!-- Resumen económico estricto (Mora = $0) -->
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 16px; margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                <div>
+                    <span style="font-size: 0.74rem; color: #065f46; display: block;">Mensualidad ({{ resultado_busqueda.tipo_tarifa }})</span>
+                    <strong style="font-size: 1.05rem; color: #064e3b;">{{ formatear_cop(resultado_busqueda.valor_mensualidad) }}</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.74rem; color: #065f46; display: block;">Recargo / Mora (RN02)</span>
+                    <strong style="font-size: 1.05rem; color: #059669;">$0 (Exento)</strong>
+                </div>
+                <div>
+                    <span style="font-size: 0.74rem; color: #065f46; display: block;">Total a Confirmar</span>
+                    <strong style="font-size: 1.2rem; color: #047857;">{{ formatear_cop(resultado_busqueda.valor_total) }} COP</strong>
+                </div>
+            </div>
+
+            <div class="form-actions-row">
+                <a href="{{ url_for('pagos.index') }}" class="btn btn-secondary">Limpiar</a>
+                <button type="submit" class="btn btn-primary">
+                    <span>Confirmar Pago y Generar Comprobante</span>
+                </button>
+            </div>
+        </form>
+
+        {% if resultado_busqueda.historial_vehiculo %}
+        <div style="margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <h4 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 10px;">Historial de Pagos de {{ v.placa }} (RN05)</h4>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Comprobante</th>
+                            <th>Fecha Pago</th>
+                            <th>Vigencia</th>
+                            <th>Valor</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hp in resultado_busqueda.historial_vehiculo %}
+                        <tr>
+                            <td><strong>{{ hp.numero_comprobante }}</strong></td>
+                            <td>{{ hp.fecha_pago }}</td>
+                            <td>{{ hp.fecha_inicio_periodo }} al {{ hp.fecha_vencimiento }}</td>
+                            <td><strong>{{ formatear_cop(hp.valor_pagado) }}</strong></td>
+                            <td>
+                                <a href="{{ url_for('pagos.comprobante', id_pago=hp.id_pago) }}" class="btn btn-secondary" style="height: 32px; padding: 0 12px; font-size: 0.78rem;">Ver Recibo</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state-card" style="padding: 36px 20px;">
+            <div class="empty-state-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="5" width="20" height="14" rx="2"/>
+                    <line x1="2" y1="10" x2="22" y2="10"/>
+                </svg>
+            </div>
+            <h4 class="empty-state-title">Busca un vehículo por placa</h4>
+            <p class="empty-state-text">Ingresa la placa arriba para consultar su estado actual, verificar los datos del propietario y liquidar su mensualidad sin mora.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Columna lateral informativa de reglas RN01-RN03 -->
+    <div class="info-sidebar-column">
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon icon-blue">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </div>
+                <h4 class="info-card-title">Tarifas Oficiales (RN01)</h4>
+            </div>
+            <p class="info-card-text">El parqueadero opera exclusivamente por mensualidades completas (sin cobros por horas ni días).</p>
+            <div class="info-card-highlight">🚗 Carros: $250.000 COP / mes</div>
+            <div class="info-card-highlight" style="background: #f5f3ff; color: #6d28d9;">🏍️ Motos: $100.000 COP / mes</div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-card-header">
+                <div class="info-card-icon icon-sky">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <h4 class="info-card-title">Renovación sin Mora (RN02 / RN03)</h4>
+            </div>
+            <p class="info-card-text">
+                Si una mensualidad está vencida, <strong>no se cobran días de mora ni recargos ($0)</strong>. El nuevo mes comienza el día del pago y vence exactamente 1 mes calendario después.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ============================================================== -->
+<!-- D. PESTAÑA 2: CONTROL DE VENCIMIENTOS                          -->
+<!-- ============================================================== -->
+{% if tab == 'vencimientos' %}
+<div class="history-table-card">
+    <div class="history-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h3 class="history-card-title">Control de Vencimientos de Mensualidades</h3>
+            <span class="history-card-subtitle">Clasificación automática: Al día, Próximas a vencer (≤ 5 días) y Vencidas</span>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <a href="{{ url_for('pagos.index', tab='vencimientos', filtro_estado='TODOS') }}" class="payment-tab-btn {% if filtro_estado == 'TODOS' %}active{% endif %}" style="padding: 6px 12px; font-size: 0.78rem;">Todos</a>
+            <a href="{{ url_for('pagos.index', tab='vencimientos', filtro_estado='AL_DIA') }}" class="payment-tab-btn {% if filtro_estado == 'AL_DIA' %}active{% endif %}" style="padding: 6px 12px; font-size: 0.78rem;">Al día ({{ kpis.al_dia }})</a>
+            <a href="{{ url_for('pagos.index', tab='vencimientos', filtro_estado='PROXIMA_A_VENCER') }}" class="payment-tab-btn {% if filtro_estado == 'PROXIMA_A_VENCER' %}active{% endif %}" style="padding: 6px 12px; font-size: 0.78rem;">Próximas ({{ kpis.proximas_vencer }})</a>
+            <a href="{{ url_for('pagos.index', tab='vencimientos', filtro_estado='VENCIDA') }}" class="payment-tab-btn {% if filtro_estado == 'VENCIDA' %}active{% endif %}" style="padding: 6px 12px; font-size: 0.78rem;">Vencidas ({{ kpis.vencidas }})</a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Placa</th>
+                    <th>Vehículo / Tarifa</th>
+                    <th>Propietario</th>
+                    <th>Último Pago</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in control_vencimientos %}
+                {% set clasif = item.estado_clasificacion %}
+                <tr>
+                    <td><strong>{{ item.placa }}</strong></td>
+                    <td>
+                        {{ item.marca }} {{ item.modelo }}<br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">{{ item.tipo }} · {{ formatear_cop(item.tarifa_mensual) }}</span>
+                    </td>
+                    <td>
+                        {% if item.propietario_nombre %}
+                            <strong>{{ item.propietario_nombre }}</strong><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">CC {{ item.propietario_identificacion }} · {{ item.propietario_celular }}</span>
+                        {% else %}
+                            <span style="font-size: 0.78rem; color: #b45309;">Sin propietario asociado</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.fecha_pago or '—' }}</td>
+                    <td><strong>{{ item.fecha_vencimiento or '—' }}</strong></td>
+                    <td>
+                        {% if clasif.codigo == 'AL_DIA' %}
+                            <span class="pill-badge pill-in-parking"><span class="dot-green"></span> {{ clasif.etiqueta }}</span>
+                        {% elif clasif.codigo == 'PROXIMA_A_VENCER' %}
+                            <span class="pill-badge pill-warning-soft"><span class="dot-amber"></span> {{ clasif.etiqueta }}</span>
+                        {% elif clasif.codigo == 'VENCIDA' %}
+                            <span class="pill-badge pill-danger-soft"><span class="dot-red"></span> {{ clasif.etiqueta }}</span>
+                        {% else %}
+                            <span class="pill-badge pill-out-parking"><span class="dot-gray"></span> {{ clasif.etiqueta }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('pagos.index', tab='registro', placa=item.placa) }}" class="btn btn-primary" style="height: 32px; padding: 0 12px; font-size: 0.78rem;">
+                            {% if clasif.codigo in ['VENCIDA', 'PROXIMA_A_VENCER', 'SIN_MENSUALIDAD'] %}Renovar / Pagar{% else %}Ver / Pagar{% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No hay vehículos clasificados en este filtro.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ============================================================== -->
+<!-- C & E. PESTAÑA 3: HISTORIAL Y COMPROBANTES                     -->
+<!-- ============================================================== -->
+{% if tab == 'historial' %}
+<div class="history-table-card">
+    <div class="history-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h3 class="history-card-title">Consulta e Historial de Pagos (RN04, RN05)</h3>
+            <span class="history-card-subtitle">Todos los pagos confirmados con acceso directo al comprobante imprimible en PDF</span>
+        </div>
+        <form method="GET" action="{{ url_for('pagos.index') }}" style="display: flex; gap: 8px;">
+            <input type="hidden" name="tab" value="historial">
+            <input type="text" name="q" value="{{ busqueda or '' }}" placeholder="Placa, comprobante, cédula o nombre..." class="form-control" style="height: 38px; width: 260px; font-size: 0.84rem;">
+            <button type="submit" class="btn btn-primary" style="height: 38px; padding: 0 14px; font-size: 0.84rem;">Filtrar</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>N° Comprobante</th>
+                    <th>Vehículo</th>
+                    <th>Propietario</th>
+                    <th>Fecha de Pago</th>
+                    <th>Periodo Pagado</th>
+                    <th>Valor (Mora $0)</th>
+                    <th>Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pagos %}
+                <tr>
+                    <td><strong style="color: #1e40af;">{{ p.numero_comprobante }}</strong></td>
+                    <td>
+                        <strong>{{ p.placa }}</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">{{ p.tipo_vehiculo_tarifa }}</span>
+                    </td>
+                    <td>
+                        <strong>{{ p.propietario_nombre }}</strong><br>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">CC {{ p.propietario_identificacion }}</span>
+                    </td>
+                    <td>{{ p.fecha_pago }}</td>
+                    <td>
+                        <span>{{ p.fecha_inicio_periodo }} → <strong>{{ p.fecha_vencimiento }}</strong></span>
+                    </td>
+                    <td>
+                        <strong>{{ formatear_cop(p.valor_pagado) }}</strong><br>
+                        <span style="font-size: 0.72rem; color: #059669;">{{ p.metodo_pago }}</span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('pagos.comprobante', id_pago=p.id_pago) }}" class="btn btn-secondary" style="height: 32px; padding: 0 12px; font-size: 0.78rem;">
+                            🖨️ Ver / PDF
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No se encontraron pagos registrados con ese criterio.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ============================================================== -->
+<!-- RN07. PESTAÑA 4: PROPIETARIOS (1 PROPIETARIO -> N VEHÍCULOS)   -->
+<!-- ============================================================== -->
+{% if tab == 'propietarios' %}
+<div class="grid-layout-two-columns">
+    <div class="history-table-card">
+        <div class="history-card-header">
+            <div>
+                <h3 class="history-card-title">Directorio de Propietarios</h3>
+                <span class="history-card-subtitle">Un propietario puede tener asociados uno o varios vehículos sin duplicar su cédula.</span>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Nombre Completo</th>
+                        <th>Contacto</th>
+                        <th>Vehículos Asociados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pr in propietarios %}
+                    <tr>
+                        <td><strong>{{ pr.identificacion }}</strong></td>
+                        <td><strong>{{ pr.nombre_completo }}</strong></td>
+                        <td>
+                            <span>📱 {{ pr.celular }}</span><br>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">✉️ {{ pr.correo }}</span>
+                        </td>
+                        <td>
+                            <span class="badge-count">{{ pr.total_vehiculos }} vehículo(s)</span>
+                            {% if pr.placas_asociadas %}
+                                <div style="margin-top: 4px; font-size: 0.78rem; font-weight: 700; color: #1e40af;">{{ pr.placas_asociadas }}</div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 28px; color: var(--text-muted);">Sin propietarios registrados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="form-container-card">
+        <div class="card-header-clean">
+            <h3 class="card-title">Registrar o Vincular Propietario</h3>
+            <p class="card-subtitle">Si la cédula ya existe, se reutiliza y asocia la placa adicional sin duplicar registros.</p>
+        </div>
+        <form action="{{ url_for('pagos.guardar_propietario') }}" method="POST">
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Número de Cédula <span class="required-star">*</span></label>
+                <input type="text" name="identificacion" class="form-control" placeholder="Ej: 1015423890" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Nombre Completo <span class="required-star">*</span></label>
+                <input type="text" name="nombre_completo" class="form-control" placeholder="Nombre y apellidos" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Número de Celular <span class="required-star">*</span></label>
+                <input type="text" name="celular" class="form-control" placeholder="Ej: 3104567890" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label">Correo Electrónico <span class="required-star">*</span></label>
+                <input type="email" name="correo" class="form-control" placeholder="correo@ejemplo.com" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label class="form-label">Asociar Placa de Vehículo (Opcional)</label>
+                <input type="text" name="placa_vincular" class="form-control text-uppercase" maxlength="7" placeholder="Ej: KLM482">
+                <span class="field-helper-text">El vehículo debe estar registrado previamente.</span>
+            </div>
+            <button type="submit" class="btn btn-primary full-width">Guardar / Asociar Propietario</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- ============================================================== -->
+<!-- F. PESTAÑA 5: NOTIFICACIONES (5 DÍAS ANTES - RN06 / SECCIÓN 7) -->
+<!-- ============================================================== -->
+{% if tab == 'notificaciones' %}
+<div class="history-table-card">
+    <div class="history-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h3 class="history-card-title">Recordatorios de Vencimiento (5 días antes · RN06)</h3>
+            <span class="history-card-subtitle">
+                Estado de integración externa:
+                Correo SMTP ({{ 'Configurado' if canales_externos.correo_smtp else 'No configurado en .env' }}) ·
+                SMS Gateway ({{ 'Configurado' if canales_externos.sms_gateway else 'No configurado en .env' }})
+            </span>
+        </div>
+        <form action="{{ url_for('pagos.sincronizar_notificaciones') }}" method="POST">
+            <button type="submit" class="btn btn-primary" style="height: 38px; font-size: 0.84rem;">
+                🔄 Verificar vencimientos (5 días)
+            </button>
+        </form>
+    </div>
+
+    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 0.82rem; color: #1e3a8a;">
+        <strong>Transparencia de canal externo (Sección 7):</strong>
+        Cuando el entorno no tiene credenciales reales de correo SMTP o SMS configuradas en <code>.env</code>, el sistema genera y conserva el recordatorio aquí para gestión interna sin simular envíos externos falsos.
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+        {% for n in notificaciones %}
+        <div style="border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; background: {% if n.estado_envio == 'GENERADA_PENDIENTE_CANAL' %}#fffbeb{% else %}#f8fafc{% endif %};">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <strong style="font-size: 1rem; color: var(--text-main);">{{ n.placa }}</strong>
+                    <span style="font-size: 0.82rem; color: var(--text-muted);">{{ n.propietario_nombre }} · 📱 {{ n.propietario_celular }} · ✉️ {{ n.propietario_correo }}</span>
+                </div>
+                {% if n.estado_envio == 'GENERADA_PENDIENTE_CANAL' %}
+                    <span class="pill-badge pill-warning-soft"><span class="dot-amber"></span> Generada (Pendiente canal externo)</span>
+                {% elif n.estado_envio == 'ENVIADA_EXTERNO' %}
+                    <span class="pill-badge pill-in-parking"><span class="dot-green"></span> Enviada por canal externo</span>
+                {% else %}
+                    <span class="pill-badge pill-out-parking"><span class="dot-gray"></span> Revisada en sistema</span>
+                {% endif %}
+            </div>
+
+            <p style="font-size: 0.88rem; color: var(--text-main); background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                "{{ n.mensaje }}"
+            </p>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 0.76rem; color: var(--text-muted);">
+                <span>Vence: <strong>{{ n.fecha_vencimiento_ref }}</strong> · {{ n.detalle_canal or 'Generada en sistema' }}</span>
+                <div style="display: flex; gap: 8px;">
+                    <a href="{{ url_for('pagos.index', tab='registro', placa=n.placa) }}" class="btn btn-primary" style="height: 30px; padding: 0 12px; font-size: 0.76rem;">Renovar Mensualidad</a>
+                    {% if n.estado_envio == 'GENERADA_PENDIENTE_CANAL' %}
+                    <form action="{{ url_for('pagos.revisar_notificacion', id_notificacion=n.id_notificacion) }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn btn-secondary" style="height: 30px; padding: 0 12px; font-size: 0.76rem;">Marcar revisada</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state-card" style="padding: 36px 20px;">
+            <h4 class="empty-state-title">Sin notificaciones pendientes</h4>
+            <p class="empty-state-text">No hay mensualidades próximas a vencer en los próximos 5 días.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const inputFechaPago = document.getElementById('fecha_pago');
+    const inputFechaVenc = document.getElementById('fecha_vencimiento_preview');
+
+    function sumarUnMesISO(isoStr) {
+        if (!isoStr || isoStr.length < 10) return '';
+        const [y, m, d] = isoStr.split('-').map(Number);
+        let nuevoMes = m + 1;
+        let nuevoAnio = y;
+        if (nuevoMes > 12) {
+            nuevoMes = 1;
+            nuevoAnio += 1;
+        }
+        const ultimoDia = new Date(nuevoAnio, nuevoMes, 0).getDate();
+        const nuevoDia = Math.min(d, ultimoDia);
+        return `${nuevoAnio}-${String(nuevoMes).padStart(2, '0')}-${String(nuevoDia).padStart(2, '0')}`;
+    }
+
+    if (inputFechaPago && inputFechaVenc) {
+        inputFechaPago.addEventListener('change', () => {
+            inputFechaVenc.value = sumarUnMesISO(inputFechaPago.value);
+        });
+    }
+
+    // Autocompletado de propietario existente por cédula (evita duplicados - RN07)
+    const inputCedula = document.getElementById('identificacion_propietario');
+    const inputNombre = document.getElementById('nombre_propietario');
+    const inputCelular = document.getElementById('celular_propietario');
+    const inputCorreo = document.getElementById('correo_propietario');
+    const ayudaCedula = document.getElementById('ayuda-cedula-prop');
+
+    if (inputCedula && inputNombre && inputCelular && inputCorreo) {
+        inputCedula.addEventListener('blur', async () => {
+            const ced = inputCedula.value.trim();
+            if (ced.length < 5) return;
+            try {
+                const res = await fetch(`/api/propietario/${encodeURIComponent(ced)}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.encontrado && data.propietario) {
+                    inputNombre.value = data.propietario.nombre_completo;
+                    inputCelular.value = data.propietario.celular;
+                    inputCorreo.value = data.propietario.correo;
+                    if (ayudaCedula) {
+                        ayudaCedula.textContent = '✓ Propietario existente encontrado y cargado automáticamente.';
+                        ayudaCedula.style.color = '#059669';
+                    }
+                }
+            } catch (e) {
+                console.log('Consulta de propietario:', e);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

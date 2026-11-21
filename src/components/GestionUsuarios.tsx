@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Users,
   UserPlus,
@@ -14,7 +14,9 @@ import {
   UserCheck,
   Lock,
   Mail,
-  Fingerprint
+  Fingerprint,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export interface Usuario {
@@ -83,6 +85,28 @@ export default function GestionUsuarios({
 
   const [formError, setFormError] = useState<string | null>(null);
   const [mensajeExito, setMensajeExito] = useState<string | null>(null);
+  const [mostrarPasswordForm, setMostrarPasswordForm] = useState(false);
+  const timerPasswordRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerPasswordRef.current) clearTimeout(timerPasswordRef.current);
+    };
+  }, []);
+
+  const toggleMostrarPassword = () => {
+    if (mostrarPasswordForm) {
+      if (timerPasswordRef.current) clearTimeout(timerPasswordRef.current);
+      setMostrarPasswordForm(false);
+    } else {
+      setMostrarPasswordForm(true);
+      if (timerPasswordRef.current) clearTimeout(timerPasswordRef.current);
+      // Auto-ocultar tras 3.5 segundos ("por un momento")
+      timerPasswordRef.current = window.setTimeout(() => {
+        setMostrarPasswordForm(false);
+      }, 3500);
+    }
+  };
 
   // Resumen estadístico
   const resumen = useMemo(() => {
@@ -510,22 +534,41 @@ export default function GestionUsuarios({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {modalAbierto === 'crear' ? (
-                      <>Contraseña <span className="text-rose-500">*</span></>
-                    ) : (
-                      'Nueva Contraseña (Opcional)'
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      {modalAbierto === 'crear' ? (
+                        <>Contraseña <span className="text-rose-500">*</span></>
+                      ) : (
+                        'Nueva Contraseña (Opcional)'
+                      )}
+                    </label>
+                    {mostrarPasswordForm && (
+                      <span className="text-[11px] font-medium text-[#1e60f2] flex items-center gap-1 animate-pulse">
+                        <span>Visible 3.5s</span>
+                      </span>
                     )}
-                  </label>
+                  </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
-                      type="password"
+                      type={mostrarPasswordForm ? 'text' : 'password'}
                       value={form.password}
                       onChange={e => setForm({ ...form, password: e.target.value })}
                       placeholder={modalAbierto === 'crear' ? 'Mínimo 6 caracteres' : 'Dejar en blanco para conservar'}
-                      className="w-full h-10 pl-9 pr-3 border border-slate-200 rounded-lg text-sm focus:border-[#1e60f2] outline-none"
+                      className="w-full h-10 pl-9 pr-10 border border-slate-200 rounded-lg text-sm focus:border-[#1e60f2] outline-none"
                     />
+                    <button
+                      type="button"
+                      onClick={toggleMostrarPassword}
+                      title={mostrarPasswordForm ? "Ocultar contraseña" : "Ver por un momento (3.5s)"}
+                      className="absolute right-2.5 top-2.5 p-1 text-slate-400 hover:text-[#1e60f2] hover:bg-slate-100 rounded-md transition"
+                    >
+                      {mostrarPasswordForm ? (
+                        <EyeOff className="w-4 h-4 text-[#1e60f2]" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
